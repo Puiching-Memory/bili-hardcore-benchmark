@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilibili 硬核会员答题数据仪表盘</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', 'SimHei', Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+        }
+        .header {
+            flex-shrink: 0;
+            padding: 10px 20px;
+            background-color: #1976D2;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .search-input {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 200px;
+            outline: none;
+        }
+        .search-button {
+            padding: 6px 16px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        .search-button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .search-error {
+            color: #ffeb3b;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        .content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            padding: 10px;
+            gap: 10px;
+        }
+        .left-panel {
+            width: 300px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+        }
+        .card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 12px;
+            overflow: hidden;
+        }
+        .card-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .overview-table {
+            font-size: 12px;
+        }
+        .overview-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .overview-table th, .overview-table td {
+            padding: 6px 8px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            font-size: 11px;
+        }
+        .overview-table th {
+            background-color: #E8F5E9;
+            font-weight: bold;
+        }
+        .overview-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .stats-chart {
+            height: 280px;
+            overflow: visible;
+        }
+        .card:has(#statistics) {
+            overflow: visible;
+        }
+        .heatmap-tabs {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .tabs-header {
+            display: flex;
+            gap: 5px;
+            padding: 5px;
+            background-color: #f5f5f5;
+            border-radius: 4px 4px 0 0;
+            overflow-x: auto;
+            flex-shrink: 0;
+        }
+        .tab-button {
+            padding: 6px 12px;
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .tab-button:hover {
+            background-color: #d0d0d0;
+        }
+        .tab-button.active {
+            background-color: #1976D2;
+            color: white;
+        }
+        .tabs-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        .tab-panel {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        .heatmap-container {
+            width: 100%;
+            height: 100%;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 16px;
+            color: #666;
+        }
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: #d32f2f;
+            font-size: 14px;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 11px;
+        }
+        .stat-item {
+            padding: 8px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1976D2;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 4px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1976D2;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .close:hover {
+            color: #000;
+        }
+        .modal-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .nav-button {
+            background-color: #1976D2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover:not(:disabled) {
+            background-color: #1565C0;
+        }
+        .nav-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .nav-info {
+            font-size: 14px;
+            color: #666;
+        }
+        .question-detail {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .question-text {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .question-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 12px;
+        }
+        .meta-item {
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .meta-label {
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .meta-value {
+            color: #333;
+        }
+        .choices-list {
+            margin-top: 15px;
+        }
+        .choice-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border-left: 4px solid #e0e0e0;
+        }
+        .choice-item.correct {
+            background-color: #E8F5E9;
+            border-left-color: #4CAF50;
+        }
+        .choice-item.wrong {
+            background-color: #FFEBEE;
+            border-left-color: #F44336;
+        }
+        .choice-item.unknown {
+            background-color: #F5F5F5;
+            border-left-color: #9E9E9E;
+        }
+        .choice-label {
+            font-weight: bold;
+            margin-right: 8px;
+            display: inline-block;
+            width: 30px;
+        }
+        .choice-status {
+            float: right;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .choice-status.correct {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .choice-status.wrong {
+            background-color: #F44336;
+            color: white;
+        }
+        .choice-status.unknown {
+            background-color: #9E9E9E;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bilibili 硬核会员答题数据仪表盘</h1>
+            <div class="search-container">
+                <input type="text" id="search-input" class="search-input" placeholder="输入题目ID搜索..." onkeypress="handleSearchKeyPress(event)">
+                <button class="search-button" onclick="searchQuestion()">搜索</button>
+                <span id="search-error" class="search-error" style="display: none;"></span>
+            </div>
+        </div>
+        <div class="content">
+            <div class="left-panel">
+                <div class="card">
+                    <div class="card-title">总体统计</div>
+                    <div id="summary-stats" class="summary-stats"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">分区概览</div>
+                    <div id="overview-table" class="overview-table"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">完成情况</div>
+                    <div id="statistics" class="stats-chart"></div>
+                </div>
+            </div>
+            <div class="right-panel">
+                <div class="card heatmap-tabs">
+                    <div class="tabs-header" id="tabs-header"></div>
+                    <div class="tabs-content" id="tabs-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="loading" class="loading" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 1000; display: flex; align-items: center; justify-content: center;">
+        正在加载数据...
+    </div>
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <!-- 题目详情模态框 -->
+    <div id="question-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">题目详情</div>
+                <span class="close" onclick="closeQuestionModal()">&times;</span>
+            </div>
+            <div id="question-detail" class="question-detail"></div>
+            <div class="modal-navigation">
+                <button class="nav-button" id="prev-question-btn" onclick="navigateQuestion(-1)">
+                    <span>←</span> 上一题
+                </button>
+                <span class="nav-info" id="question-nav-info"></span>
+                <button class="nav-button" id="next-question-btn" onclick="navigateQuestion(1)">
+                    下一题 <span>→</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 加载 JSON 数据
+        async function loadData() {
+            try {
+                const response = await fetch('questions_raw.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                return data.questions || {};
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = `加载数据失败: ${error.message}`;
+                throw error;
+            }
+        }
+
+        // 获取选项状态
+        function getChoiceStatus(question, choiceIdx) {
+            if (question.correct_answer !== undefined) {
+                if (choiceIdx === question.correct_answer) {
+                    return 'correct';
+                } else {
+                    return 'wrong';
+                }
+            }
+            if (question.wrong_answers && question.wrong_answers.includes(choiceIdx)) {
+                return 'wrong';
+            }
+            return 'unknown';
+        }
+
+        // 按分区分组题目
+        function groupByCategory(questions) {
+            const categories = {};
+            for (const [qid, question] of Object.entries(questions)) {
+                const cat = question.category || '未分类';
+                if (!categories[cat]) {
+                    categories[cat] = {};
+                }
+                categories[cat][qid] = question;
+            }
+            return categories;
+        }
+
+        // 创建总体统计
+        function createSummaryStats(totalQuestions, completeQuestions, partialQuestions, unknownQuestions) {
+            const container = document.getElementById('summary-stats');
+            const completePct = ((completeQuestions / totalQuestions) * 100).toFixed(1);
+            const partialPct = ((partialQuestions / totalQuestions) * 100).toFixed(1);
+            const unknownPct = ((unknownQuestions / totalQuestions) * 100).toFixed(1);
+            
+            container.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${totalQuestions}</div>
+                    <div class="stat-label">总题数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: #2E7D32;">${completeQuestions}</div>
+                    <div class="stat-label">完整 (${completePct}%)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: #F57C00;">${partialQuestions}</div>
+                    <div class="stat-label">部分 (${partialPct}%)</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" style="color: #D32F2F;">${unknownQuestions}</div>
+                    <div class="stat-label">未知 (${unknownPct}%)</div>
+                </div>
+            `;
+        }
+
+        // 创建概览表格
+        function createOverviewTable(catStats) {
+            const tableContainer = document.getElementById('overview-table');
+            
+            // 计算总题目数
+            const totalQuestions = catStats.reduce((sum, stat) => sum + stat.total, 0);
+            
+            let html = '<table><thead><tr>';
+            html += '<th>分区</th><th>总数</th><th>%</th>';
+            html += '</tr></thead><tbody>';
+            
+            catStats.forEach(stat => {
+                const bgColor = stat.name === '未分类' ? '#FFF3E0' : '#E8F5E9';
+                const percentage = totalQuestions > 0 ? ((stat.total / totalQuestions) * 100).toFixed(1) : '0.0';
+                html += `<tr style="background-color: ${bgColor};">`;
+                html += `<td><strong>${stat.name}</strong></td>`;
+                html += `<td>${stat.total}</td>`;
+                html += `<td>${percentage}%</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            tableContainer.innerHTML = html;
+        }
+
+        // 创建统计图表
+        function createStatistics(catStats) {
+            const chart = echarts.init(document.getElementById('statistics'));
+            
+            // 准备饼图数据：显示各分区的完成数量
+            const pieData = catStats.map(stat => ({
+                value: stat.complete,
+                name: stat.name,
+                label: {
+                    formatter: '{b}\n{c}题 ({d}%)'
+                }
+            }));
+            
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c}题 ({d}%)'
+                },
+                legend: {
+                    orient: 'horizontal',
+                    left: 'center',
+                    bottom: 5,
+                    textStyle: {
+                        fontSize: 10
+                    },
+                    itemWidth: 12,
+                    itemHeight: 12
+                },
+                series: [
+                    {
+                        name: '完成情况',
+                        type: 'pie',
+                        radius: ['15%', '40%'],
+                        center: ['50%', '40%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 4,
+                            borderColor: '#fff',
+                            borderWidth: 1
+                        },
+                        label: {
+                            show: true,
+                            fontSize: 10,
+                            formatter: '{b}\n{c}题 ({d}%)',
+                            overflow: 'none'
+                        },
+                        labelLine: {
+                            show: true,
+                            length: 10,
+                            length2: 5
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 12,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        data: pieData
+                    }
+                ]
+            };
+            
+            chart.setOption(option);
+            window.addEventListener('resize', () => chart.resize());
+        }
+
+        // 存储所有图表实例
+        const chartInstances = {};
+        
+        // 存储所有题目数据（用于详情显示）
+        let allQuestionsData = {};
+        
+        // 当前题目导航信息
+        let currentQuestionList = [];
+        let currentQuestionIndex = -1;
+        
+        // 最后点击的题目ID（用于高亮显示）
+        let lastClickedQuestionId = null;
+        
+        // 存储每个图表的题目ID列表（用于高亮）
+        const chartQuestionIds = {};
+        
+        // 存储分类信息（用于搜索时切换标签页）
+        const categoryMap = {};
+        const categoryButtonMap = {}; // 分类名称到按钮的映射
+        
+        // 搜索题目
+        function searchQuestion() {
+            const searchInput = document.getElementById('search-input');
+            const searchError = document.getElementById('search-error');
+            const questionId = searchInput.value.trim();
+            
+            // 清除之前的错误信息
+            searchError.style.display = 'none';
+            searchError.textContent = '';
+            
+            if (!questionId) {
+                searchError.textContent = '请输入题目ID';
+                searchError.style.display = 'inline';
+                return;
+            }
+            
+            // 检查题目是否存在
+            if (!allQuestionsData[questionId]) {
+                searchError.textContent = '未找到该题目';
+                searchError.style.display = 'inline';
+                return;
+            }
+            
+            // 找到题目所属的分类
+            const question = allQuestionsData[questionId];
+            const category = question.category || '未分类';
+            
+            // 切换到对应的标签页
+            const button = categoryButtonMap[category];
+            if (button) {
+                button.click();
+            }
+            
+            // 获取该分类下的所有题目ID列表（用于导航）
+            const categoryQuestions = categoryMap[category] || {};
+            const questionList = Object.keys(categoryQuestions).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            // 显示题目详情
+            showQuestionDetail(questionId, questionList);
+        }
+        
+        // 处理搜索框回车键
+        function handleSearchKeyPress(event) {
+            if (event.key === 'Enter') {
+                searchQuestion();
+            }
+        }
+        
+        // 显示题目详情
+        function showQuestionDetail(questionId, questionList = null) {
+            // 如果提供了题目列表，更新当前列表
+            if (questionList) {
+                currentQuestionList = questionList;
+            }
+            
+            // 查找当前题目在列表中的索引
+            currentQuestionIndex = currentQuestionList.indexOf(questionId);
+            if (currentQuestionIndex === -1 && currentQuestionList.length > 0) {
+                // 如果找不到，尝试使用第一个
+                currentQuestionIndex = 0;
+                questionId = currentQuestionList[0];
+            }
+            const question = allQuestionsData[questionId];
+            if (!question) {
+                console.error('题目不存在:', questionId);
+                return;
+            }
+            
+            // 更新最后点击的题目ID并更新所有图表的高亮
+            lastClickedQuestionId = questionId;
+            updateHighlightInAllCharts();
+            
+            const modal = document.getElementById('question-modal');
+            const detailDiv = document.getElementById('question-detail');
+            
+            // 构建题目详情HTML
+            let html = '';
+            
+            // 题目文本
+            html += `<div class="question-text">${question.question || '（无题目文本）'}</div>`;
+            
+            // 元信息
+            html += '<div class="question-meta">';
+            html += `<div class="meta-item"><div class="meta-label">题目ID</div><div class="meta-value">${questionId}</div></div>`;
+            if (question.category) {
+                html += `<div class="meta-item"><div class="meta-label">分区</div><div class="meta-value">${question.category}</div></div>`;
+            }
+            html += `<div class="meta-item"><div class="meta-label">尝试次数</div><div class="meta-value">${question.attempts || 0}</div></div>`;
+            if (question.last_attempt) {
+                html += `<div class="meta-item"><div class="meta-label">最后尝试</div><div class="meta-value">${new Date(question.last_attempt).toLocaleString('zh-CN')}</div></div>`;
+            }
+            html += '</div>';
+            
+            // 选项列表
+            html += '<div class="choices-list">';
+            html += '<div style="font-weight: bold; margin-bottom: 10px;">选项：</div>';
+            
+            question.choices.forEach((choice, index) => {
+                const status = getChoiceStatus(question, index);
+                let statusText = '';
+                let statusClass = '';
+                
+                if (status === 'correct') {
+                    statusText = '✅ 正确答案';
+                    statusClass = 'correct';
+                } else if (status === 'wrong') {
+                    statusText = '❌ 错误答案';
+                    statusClass = 'wrong';
+                } else {
+                    statusText = '⚪ 未知';
+                    statusClass = 'unknown';
+                }
+                
+                const choiceLabel = String.fromCharCode(65 + index);
+                html += `<div class="choice-item ${statusClass}">`;
+                html += `<span class="choice-label">${choiceLabel}.</span>`;
+                html += `<span>${choice}</span>`;
+                html += `<span class="choice-status ${statusClass}">${statusText}</span>`;
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            
+            detailDiv.innerHTML = html;
+            modal.classList.add('active');
+            
+            // 更新导航按钮状态
+            updateNavigationButtons();
+        }
+        
+        // 更新导航按钮状态
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prev-question-btn');
+            const nextBtn = document.getElementById('next-question-btn');
+            const navInfo = document.getElementById('question-nav-info');
+            
+            const hasPrev = currentQuestionIndex > 0;
+            const hasNext = currentQuestionIndex < currentQuestionList.length - 1;
+            
+            prevBtn.disabled = !hasPrev;
+            nextBtn.disabled = !hasNext;
+            
+            // 更新导航信息
+            if (currentQuestionList.length > 0) {
+                navInfo.textContent = `${currentQuestionIndex + 1} / ${currentQuestionList.length}`;
+            } else {
+                navInfo.textContent = '';
+            }
+        }
+        
+        // 导航到上一题/下一题
+        function navigateQuestion(direction) {
+            if (currentQuestionList.length === 0) return;
+            
+            const newIndex = currentQuestionIndex + direction;
+            if (newIndex >= 0 && newIndex < currentQuestionList.length) {
+                const newQuestionId = currentQuestionList[newIndex];
+                // 更新最后点击的题目ID并更新高亮
+                lastClickedQuestionId = newQuestionId;
+                updateHighlightInAllCharts();
+                showQuestionDetail(newQuestionId);
+            }
+        }
+        
+        // 键盘事件监听
+        document.addEventListener('keydown', function(event) {
+            const modal = document.getElementById('question-modal');
+            // 只有在模态框打开时才响应键盘事件
+            if (!modal.classList.contains('active')) return;
+            
+            // 如果用户正在输入框中输入，不响应方向键
+            const activeElement = document.activeElement;
+            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                return;
+            }
+            
+            // 左箭头或上箭头：上一题
+            if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                navigateQuestion(-1);
+            }
+            // 右箭头或下箭头：下一题
+            else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                event.preventDefault();
+                navigateQuestion(1);
+            }
+            // ESC键：关闭模态框
+            else if (event.key === 'Escape') {
+                event.preventDefault();
+                closeQuestionModal();
+            }
+        });
+        
+        // 关闭题目详情模态框
+        function closeQuestionModal() {
+            const modal = document.getElementById('question-modal');
+            modal.classList.remove('active');
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('question-modal');
+            if (event.target === modal) {
+                closeQuestionModal();
+            }
+        };
+
+        // 创建热力图
+        function createHeatmap(containerId, category, catQuestions) {
+            const questionIds = Object.keys(catQuestions).sort((a, b) => parseInt(a) - parseInt(b));
+            // 保存题目ID列表，用于高亮
+            chartQuestionIds[containerId] = questionIds;
+            
+            const maxChoices = Math.max(...Object.values(catQuestions).map(q => q.choices.length));
+            
+            const data = [];
+            const yAxisData = [];
+            const xAxisData = Array.from({length: maxChoices}, (_, i) => String.fromCharCode(65 + i));
+            
+            for (let i = 0; i < questionIds.length; i++) {
+                const qid = questionIds[i];
+                const question = catQuestions[qid];
+                const numChoices = question.choices.length;
+                yAxisData.push(qid);
+                
+                for (let j = 0; j < maxChoices; j++) {
+                    if (j < numChoices) {
+                        const status = getChoiceStatus(question, j);
+                        let value;
+                        if (status === 'correct') {
+                            value = 2;
+                        } else if (status === 'wrong') {
+                            value = 1;
+                        } else {
+                            value = 0;
+                        }
+                        data.push([j, i, value]);
+                    }
+                }
+            }
+            
+            const completeCount = Object.values(catQuestions).filter(q => q.correct_answer !== undefined).length;
+            const totalCount = Object.keys(catQuestions).length;
+            const completePct = totalCount > 0 ? (completeCount / totalCount * 100).toFixed(1) : 0;
+            
+            // 如果题目数超过20题，限制初始显示范围
+            const maxDisplayRows = 20;
+            const needDataZoom = questionIds.length > maxDisplayRows;
+            let dataZoomConfig = [];
+            
+            if (needDataZoom) {
+                // 计算初始显示范围（显示前10题）
+                const startPercent = 0;
+                const endPercent = Math.min(100, (maxDisplayRows / questionIds.length) * 100);
+                
+                dataZoomConfig = [{
+                    type: 'slider',
+                    yAxisIndex: 0,
+                    start: startPercent,
+                    end: endPercent,
+                    handleSize: 8,
+                    handleStyle: {
+                        color: '#1976D2'
+                    },
+                    textStyle: {
+                        fontSize: 10
+                    },
+                    right: 10
+                }, {
+                    type: 'inside',
+                    yAxisIndex: 0,
+                    start: startPercent,
+                    end: endPercent,
+                    zoomOnMouseWheel: false,
+                    moveOnMouseMove: true,
+                    moveOnMouseWheel: true
+                }];
+            }
+            
+            const chart = echarts.init(document.getElementById(containerId));
+            chartInstances[containerId] = chart;
+            
+            const option = {
+                title: {
+                    text: `${category} (${totalCount}题)${needDataZoom ? ' - 可滚动查看' : ''}`,
+                    left: 'center',
+                    top: 5,
+                    textStyle: { fontSize: 12, fontWeight: 'bold' }
+                },
+                tooltip: {
+                    position: 'top',
+                    formatter: function(params) {
+                        const qid = yAxisData[params.data[1]];
+                        const option = xAxisData[params.data[0]];
+                        const value = params.data[2];
+                        let status = '';
+                        if (value === 2) status = '✅ 正确答案';
+                        else if (value === 1) status = '❌ 错误答案';
+                        else status = '⚪ 未知状态';
+                        return `题目: ${qid}<br>选项: ${option}<br>${status}<br><small style="color: #999;">点击查看详情</small>`;
+                    }
+                },
+                grid: {
+                    left: 80,
+                    right: needDataZoom ? 50 : 30,
+                    top: 40,
+                    bottom: 30,
+                    containLabel: false
+                },
+                dataZoom: dataZoomConfig,
+                xAxis: {
+                    type: 'category',
+                    data: xAxisData,
+                    splitArea: { show: true },
+                    axisLabel: { fontSize: 10 }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: yAxisData,
+                    splitArea: { show: true },
+                    axisLabel: { 
+                        fontSize: 9,
+                        rich: {
+                            highlight: {
+                                backgroundColor: '#FFD700',
+                                color: '#000',
+                                fontWeight: 'bold',
+                                padding: [2, 4, 2, 4],
+                                borderRadius: 3
+                            }
+                        },
+                        formatter: function(value) {
+                            // 如果是最后点击的题目，添加高亮样式
+                            if (lastClickedQuestionId === value) {
+                                return '{highlight|' + value + '}';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                visualMap: {
+                    min: 0,
+                    max: 2,
+                    calculable: false,
+                    show: false,
+                    inRange: {
+                        color: ['#CCCCCC', '#FF6B6B', '#51CF66']
+                    }
+                },
+                series: [{
+                    name: '状态',
+                    type: 'heatmap',
+                    data: data,
+                    label: { show: false },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    },
+                    markArea: lastClickedQuestionId && questionIds.includes(lastClickedQuestionId) ? {
+                        silent: true,
+                        itemStyle: {
+                            color: 'rgba(255, 215, 0, 0.15)',
+                            borderColor: '#FFD700',
+                            borderWidth: 2
+                        },
+                        data: [[
+                            { yAxis: questionIds.indexOf(lastClickedQuestionId) },
+                            { yAxis: questionIds.indexOf(lastClickedQuestionId) }
+                        ]]
+                    } : undefined
+                }]
+            };
+            
+            chart.setOption(option);
+            
+            // 添加点击事件
+            chart.on('click', function(params) {
+                if (params.data && params.data.length >= 2) {
+                    const questionIndex = params.data[1];
+                    const questionId = yAxisData[questionIndex];
+                    if (questionId) {
+                        showQuestionDetail(questionId, questionIds);
+                    }
+                }
+            });
+            
+            // 如果有最后点击的题目，立即应用高亮
+            if (lastClickedQuestionId && questionIds.includes(lastClickedQuestionId)) {
+                updateChartHighlight(containerId, chart);
+            }
+            
+            window.addEventListener('resize', () => {
+                Object.values(chartInstances).forEach(ch => ch.resize());
+            });
+        }
+        
+        // 更新单个图表的高亮
+        function updateChartHighlight(containerId, chart) {
+            const questionIds = chartQuestionIds[containerId];
+            if (!questionIds || !lastClickedQuestionId) return;
+            
+            const questionIndex = questionIds.indexOf(lastClickedQuestionId);
+            if (questionIndex === -1) return;
+            
+            // 更新图表选项以应用高亮
+            const option = chart.getOption();
+            if (!option) return;
+            
+            // 更新yAxis标签高亮
+            if (option.yAxis && option.yAxis[0]) {
+                option.yAxis[0].axisLabel = {
+                    fontSize: 9,
+                    rich: {
+                        highlight: {
+                            backgroundColor: '#FFD700',
+                            color: '#000',
+                            fontWeight: 'bold',
+                            padding: [2, 4, 2, 4],
+                            borderRadius: 3
+                        }
+                    },
+                    formatter: function(value) {
+                        if (lastClickedQuestionId === value) {
+                            return '{highlight|' + value + '}';
+                        }
+                        return value;
+                    }
+                };
+            }
+            
+            // 更新markArea高亮整行
+            if (option.series && option.series[0]) {
+                option.series[0].markArea = {
+                    silent: true,
+                    itemStyle: {
+                        color: 'rgba(255, 215, 0, 0.15)',
+                        borderColor: '#FFD700',
+                        borderWidth: 2
+                    },
+                    data: [[
+                        { yAxis: questionIndex },
+                        { yAxis: questionIndex }
+                    ]]
+                };
+            }
+            
+            chart.setOption(option, true);
+        }
+        
+        // 更新所有图表的高亮
+        function updateHighlightInAllCharts() {
+            Object.entries(chartInstances).forEach(([containerId, chart]) => {
+                updateChartHighlight(containerId, chart);
+            });
+        }
+
+        // 主函数
+        async function main() {
+            try {
+                const questions = await loadData();
+                
+                if (Object.keys(questions).length === 0) {
+                    throw new Error('没有找到题目数据');
+                }
+                
+                // 保存所有题目数据供详情显示使用
+                allQuestionsData = questions;
+                
+                const categories = groupByCategory(questions);
+                const sortedCategories = Object.entries(categories).sort((a, b) => {
+                    if (a[0] === '未分类') return 1;
+                    if (b[0] === '未分类') return -1;
+                    return b[1].length - a[1].length;
+                });
+                
+                // 保存分类映射（用于搜索）
+                sortedCategories.forEach(([cat, catQuestions]) => {
+                    categoryMap[cat] = catQuestions;
+                });
+                
+                const catStats = sortedCategories.map(([cat, catQuestions]) => {
+                    const complete = Object.values(catQuestions).filter(q => q.correct_answer !== undefined).length;
+                    const total = Object.keys(catQuestions).length;
+                    return {
+                        name: cat,
+                        complete: complete,
+                        total: total,
+                        pct: total > 0 ? (complete / total * 100) : 0
+                    };
+                });
+                
+                const totalQuestions = Object.keys(questions).length;
+                const completeQuestions = Object.values(questions).filter(q => q.correct_answer !== undefined).length;
+                const partialQuestions = Object.values(questions).filter(q => 
+                    q.correct_answer === undefined && q.wrong_answers && q.wrong_answers.length > 0
+                ).length;
+                const unknownQuestions = totalQuestions - completeQuestions - partialQuestions;
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                createSummaryStats(totalQuestions, completeQuestions, partialQuestions, unknownQuestions);
+                createOverviewTable(catStats);
+                createStatistics(catStats);
+                
+                // 创建标签页和热力图
+                const tabsHeader = document.getElementById('tabs-header');
+                const tabsContent = document.getElementById('tabs-content');
+                
+                sortedCategories.forEach(([category, catQuestions], index) => {
+                    // 创建标签按钮
+                    const button = document.createElement('button');
+                    button.className = 'tab-button' + (index === 0 ? ' active' : '');
+                    button.textContent = `${category} (${Object.keys(catQuestions).length})`;
+                    const containerId = `heatmap-${index}`;
+                    
+                    // 保存分类到按钮的映射（用于搜索）
+                    categoryButtonMap[category] = button;
+                    
+                    button.onclick = () => {
+                        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+                        button.classList.add('active');
+                        const panel = document.getElementById(`panel-${index}`);
+                        panel.classList.add('active');
+                        
+                        // 切换标签页后，重新调整图表尺寸
+                        if (chartInstances[containerId]) {
+                            // 使用 requestAnimationFrame 确保 DOM 已更新
+                            requestAnimationFrame(() => {
+                                setTimeout(() => {
+                                    chartInstances[containerId].resize();
+                                }, 50);
+                            });
+                        }
+                    };
+                    tabsHeader.appendChild(button);
+                    
+                    // 创建面板
+                    const panel = document.createElement('div');
+                    panel.id = `panel-${index}`;
+                    panel.className = 'tab-panel' + (index === 0 ? ' active' : '');
+                    const heatmapDiv = document.createElement('div');
+                    heatmapDiv.id = containerId;
+                    heatmapDiv.className = 'heatmap-container';
+                    panel.appendChild(heatmapDiv);
+                    tabsContent.appendChild(panel);
+                    
+                    // 延迟创建图表以确保容器已渲染
+                    // 对于第一个标签页，立即创建；其他标签页延迟创建
+                    if (index === 0) {
+                        // 第一个标签页立即创建
+                        requestAnimationFrame(() => {
+                            createHeatmap(containerId, category, catQuestions);
+                            // 确保图表尺寸正确
+                            setTimeout(() => {
+                                if (chartInstances[containerId]) {
+                                    chartInstances[containerId].resize();
+                                }
+                            }, 100);
+                        });
+                    } else {
+                        // 其他标签页延迟创建
+                        setTimeout(() => {
+                            createHeatmap(containerId, category, catQuestions);
+                        }, 200);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>

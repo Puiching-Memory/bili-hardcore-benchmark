@@ -1,0 +1,45 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          uv sync --extra dev --extra cpu
+
+      - name: Run ruff (linting)
+        run: |
+          uv run ruff check bili-hardcore-benchmark
+
+      - name: Run black (format check)
+        run: |
+          uv run black --check bili-hardcore-benchmark
+
+      - name: Run mypy (type check)
+        run: |
+          uv run mypy bili-hardcore-benchmark

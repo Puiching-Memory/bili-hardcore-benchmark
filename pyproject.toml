@@ -4,7 +4,7 @@ version = "1.0.0"
 description = "Bilibili 硬核会员答题 Benchmark 收集工具"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = {text = "GPL-3.0"}
 authors = [
     {name = "bili-hardcore-benchmark"}
 ]
@@ -36,6 +36,7 @@ dependencies = [
     "qrcode>=7.0",
     "requests>=2.28.0",
     "urllib3>=1.26.0,<3.0.0",
+    "lm_eval[api,hf]",
 ]
 
 [project.optional-dependencies]
@@ -43,6 +44,12 @@ dev = [
     "black>=22.0.0",
     "ruff>=0.0.260",
     "mypy>=1.0.0",
+]
+cuda = [
+    "torch>=2.9,<3.0",
+]
+cpu = [
+    "torch>=2.9,<3.0",
 ]
 
 [project.scripts]
@@ -90,3 +97,6 @@ module = [
     "datasets.*",
 ]
 ignore_missing_imports = true
+
+[tool.uv.sources]
+lm_eval = { path = "3rd/lm-evaluation-harness" }

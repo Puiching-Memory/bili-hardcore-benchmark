@@ -41,14 +41,15 @@ def main() -> None:
         logger.info(f"\n正在导出 {stats.complete_questions} 道完整题目...")
         export_service = container.get_export_service()
         
-        # 导出 Arrow 格式
+        # 导出 Arrow 格式（按分类导出子数据集）
         export_dir = settings.get_export_dir()
         export_service.export_huggingface(
             benchmark=benchmark_service.benchmark,
             output_dir=export_dir,
-            version=settings.benchmark_version
+            version=settings.benchmark_version,
+            split_by_category=True  # 按分类导出
         )
-        logger.info(f"✅ HuggingFace 格式已导出到: {export_dir}")
+        logger.info(f"✅ HuggingFace 格式（按分类）已导出到: {export_dir}")
         
         # 导出 JSONL 格式
         jsonl_file = settings.get_export_jsonl_path()

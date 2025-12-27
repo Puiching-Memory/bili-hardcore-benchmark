@@ -76,9 +76,12 @@ class HuggingFaceExporter:
         
         dataset.info.version = version_formatted
         
-        # 保存为 Arrow 格式
+        # 保存为 Arrow 格式（lm_eval 需要 train split）
         output_dir.mkdir(parents=True, exist_ok=True)
-        dataset.save_to_disk(str(output_dir))
+        # 创建 DatasetDict 包含 train split
+        from datasets import DatasetDict
+        dataset_dict = DatasetDict({"train": dataset})
+        dataset_dict.save_to_disk(str(output_dir))
         
         logger.info(
             f"已导出 {len(questions)} 道题目到 HuggingFace 格式: {output_dir}"

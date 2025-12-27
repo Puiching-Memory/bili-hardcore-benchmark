@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilibili 硬核会员答题 Benchmark 评估结果</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d9d9d9;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #bfbfbf;
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', 'SimHei', Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            flex-shrink: 0;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #1890ff 0%, #001529 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .header .subtitle {
+            font-size: 12px;
+            opacity: 0.85;
+        }
+        .content {
+            flex: 1;
+            display: flex;
+            padding: 4px;
+            gap: 4px;
+            overflow: hidden;
+        }
+        .left-panel {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: 100%;
+        }
+        .right-panel {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: 100%;
+        }
+
+        /* 响应式布局：小屏幕适配 */
+        @media (max-width: 1024px) {
+            html, body {
+                overflow: auto;
+                height: auto;
+            }
+            .container {
+                height: auto;
+                min-height: 100vh;
+            }
+            .content {
+                flex-direction: column;
+                overflow: visible;
+                height: auto;
+            }
+            .left-panel, .right-panel {
+                width: 100%;
+                height: auto;
+                flex-shrink: 1;
+            }
+            .chart-container {
+                height: 350px;
+                flex: none;
+            }
+            .data-table-container {
+                max-height: 400px;
+            }
+            .card {
+                height: auto;
+                min-height: 400px;
+            }
+            .left-panel .card:first-child {
+                min-height: auto;
+            }
+            .header h1 {
+                font-size: 16px;
+            }
+            .header .subtitle {
+                font-size: 10px;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e8e8e8;
+            position: relative;
+        }
+        .card.scrollable-x {
+            overflow-x: auto;
+        }
+        .card.scrollable-y {
+            overflow-y: auto;
+        }
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #262626;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        .card-title::before {
+            content: "";
+            display: inline-block;
+            width: 3px;
+            height: 12px;
+            background: #1890ff;
+            margin-right: 6px;
+            border-radius: 1px;
+        }
+        .chart-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+        }
+        .data-table-container {
+            flex: 1;
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
+            border-radius: 4px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            table-layout: fixed;
+        }
+        .data-table th, .data-table td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .data-table th {
+            background-color: #fafafa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            color: #595959;
+        }
+        .data-table th:first-child, .data-table td:first-child {
+            width: 100px;
+            text-align: left;
+            font-weight: 500;
+            position: sticky;
+            left: 0;
+            background-color: white;
+            z-index: 1;
+            white-space: normal;
+            word-break: break-word;
+        }
+        .data-table th:first-child {
+            z-index: 3;
+            background-color: #fafafa;
+        }
+        .data-table tr:hover td {
+            background-color: #f5f5f5;
+        }
+        .accuracy-good { color: #52c41a; font-weight: 600; }
+        .accuracy-medium { color: #faad14; font-weight: 600; }
+        .accuracy-poor { color: #ff4d4f; font-weight: 600; }
+        
+        .loading {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: white;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1890ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Bilibili 硬核会员答题 Benchmark 评估结果</h1>
+                    <div class="subtitle" id="model-info">正在加载...</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="export-svg-btn" style="display: none; padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.3s;">导出图表为 SVG</button>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="left-panel">
+                <div class="card" style="flex: 1;">
+                    <div class="card-title">模型对比（总体准确率）</div>
+                    <div id="overallChart" class="chart-container"></div>
+                </div>
+                <div class="card" style="flex: 1.2;">
+                    <div class="card-title">详细数据</div>
+                    <div id="data-table" class="data-table-container chart-container"></div>
+                </div>
+            </div>
+            <div class="right-panel">
+                <div class="card" style="flex: 1.2;">
+                    <div class="card-title">各分类准确率对比</div>
+                    <div id="categoryChart" class="chart-container"></div>
+                </div>
+                <div class="card" style="flex: 1;">
+                    <div class="card-title">分类准确率雷达图</div>
+                    <div id="radarChart" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <div style="color: #1890ff; font-weight: 500;">正在加载评估数据...</div>
+    </div>
+    <div id="error" class="error" style="display: none;"></div>
+
+    <script>
+        // 分类名称映射
+        const categoryMap = {
+            'bili_hardcore_anime': '动画/漫画',
+            'bili_hardcore_game': '游戏',
+            'bili_hardcore_kichiku': '鬼畜',
+            'bili_hardcore_knowledge': '知识',
+            'bili_hardcore_literature': '文史',
+            'bili_hardcore_movie': '影视',
+            'bili_hardcore_music': '音乐',
+            'bili_hardcore_sports': '体育'
+        };
+
+        // 模型颜色列表（使用现代、协调的配色方案）
+        const modelColors = [
+            '#3B82F6', // 蓝色 - 明亮、专业
+            '#10B981', // 绿色 - 清新、自然
+            '#F59E0B', // 琥珀色 - 温暖、醒目
+            '#EF4444', // 红色 - 强烈、突出
+            '#8B5CF6', // 紫色 - 优雅、独特
+            '#06B6D4', // 青色 - 清爽、现代
+            '#EC4899', // 粉色 - 柔和、友好
+            '#14B8A6', // 青色 - 清新、专业
+            '#F97316', // 橙色 - 活力、温暖
+            '#6366F1', // 靛蓝色 - 稳重、专业
+            '#84CC16', // 青绿色 - 活力、清新
+            '#A855F7'  // 紫色 - 深度、优雅
+        ];
+
+        // 获取结果文件路径列表
+        function getResultsFilePaths() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const filesParam = urlParams.get('files');
+            if (filesParam) {
+                return filesParam.split(',').map(f => f.trim()).filter(f => f);
+            }
+            // 如果未指定，使用默认路径（三个模型对比）
+            return [
+                'deepseek-ai__DeepSeek-OCR/results_2025-12-27T21-08-18.854428.json',
+                'tencent__Hunyuan-MT-7B/results_2025-12-27T21-18-43.294431.json',
+                'Qwen__Qwen3-8B/results_2025-12-27T21-16-06.117294.json',
+                'Qwen__Qwen2.5-7B-Instruct/results_2025-12-27T21-38-29.480108.json',
+                'Qwen__Qwen2.5-Coder-7B-Instruct/results_2025-12-27T21-47-08.755022.json',
+                'THUDM__GLM-4-9B-0414/results_2025-12-27T21-51-34.665134.json'
+            ];
+        }
+
+        // 加载多个 JSON 数据文件
+        async function loadMultipleData() {
+            const filePaths = getResultsFilePaths();
+            const results = [];
+            
+            for (const filePath of filePaths) {
+                try {
+                    const response = await fetch(filePath);
+                    if (!response.ok) {
+                        console.warn(`Failed to load ${filePath}: ${response.status}`);
+                        continue;
+                    }
+                    const data = await response.json();
+                    results.push({
+                        data: data,
+                        filePath: filePath,
+                        modelName: data.model_name || data.config?.model_args?.model || 'Unknown'
+                    });
+                } catch (error) {
+                    console.warn(`Error loading ${filePath}:`, error);
+                }
+            }
+            
+            if (results.length === 0) {
+                throw new Error('未能加载任何结果文件');
+            }
+            
+            return results;
+        }
+
+        // 创建总体对比图表
+        function createOverallChart(results) {
+            const container = document.getElementById('overallChart');
+            if (!container) return null;
+            
+            // 增加垂直间隔：提高每个模型的基准高度
+            const minHeightPerModel = 45;
+            const baseHeight = 100;
+            const calculatedHeight = results.length * minHeightPerModel + baseHeight;
+            
+            // 始终设置一个合理的最小高度，如果模型多则启用滚动
+            container.style.height = calculatedHeight + 'px';
+            if (calculatedHeight > 400) {
+                container.parentElement.classList.add('scrollable-y');
+            }
+
+            const chart = echarts.init(container, null, { renderer: 'svg' });
+            
+            // 获取总体得分的辅助函数
+            const getOverallAcc = (r) => {
+                const res = r.data.results;
+                // 优先找 bili_hardcore，找不到就找第一个包含 acc,none 的项
+                if (res.bili_hardcore) return parseFloat((res.bili_hardcore['acc,none'] * 100).toFixed(2));
+                for (const key in res) {
+                    if (res[key]['acc,none'] !== undefined) return parseFloat((res[key]['acc,none'] * 100).toFixed(2));
+                }
+                return 0;
+            };
+
+            if (results.length === 1) {
+                // 单个模型：显示分类分布饼图
+                const data = results[0].data;
+                const pieData = [];
+                const subtasks = data.group_subtasks?.bili_hardcore || [];
+                
+                subtasks.forEach(taskName => {
+                    const categoryName = categoryMap[taskName] || taskName;
+                    const samples = data['n-samples'][taskName];
+                    if (samples) {
+                        pieData.push({
+                            value: samples.original,
+                            name: categoryName
+                        });
+                    }
+                });
+                
+                const option = {
+                    toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: '{b}: {c}题 ({d}%)'
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        left: 'left',
+                        top: 'middle',
+                        textStyle: { fontSize: 10 },
+                        itemWidth: 8,
+                        itemHeight: 8
+                    },
+                    series: [{
+                        name: '题目分布',
+                        type: 'pie',
+                        radius: ['40%', '75%'],
+                        center: ['65%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 4,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: false,
+                            position: 'center'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: '14',
+                                fontWeight: 'bold',
+                                formatter: '{b}\n{c}题'
+                            }
+                        },
+                        labelLine: {
+                            show: false
+                        },
+                        data: pieData
+                    }]
+                };
+                
+                chart.setOption(option);
+            } else {
+                // 多个模型：显示总体准确率对比柱状图
+                const modelNames = results.map(r => r.modelName.split('/').pop() || r.modelName);
+                const accuracies = results.map(r => getOverallAcc(r));
+                
+                const option = {
+                    toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' },
+                        formatter: function(params) {
+                            const param = params[0];
+                            const idx = param.dataIndex;
+                            return `${results[idx].modelName}<br/>总体准确率: <b>${accuracies[idx]}%</b>`;
+                        }
+                    },
+                    grid: {
+                        left: '5%',
+                        right: '12%',
+                        top: '2%',
+                        bottom: '2%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'value',
+                        name: '%',
+                        min: 0,
+                        max: 100,
+                        splitLine: { lineStyle: { type: 'dashed' } }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: modelNames,
+                        axisLabel: { 
+                            fontSize: 10,
+                            interval: 0
+                        }
+                    },
+                    series: [{
+                        name: '总体准确率',
+                        type: 'bar',
+                        barWidth: '50%',
+                        data: accuracies.map((acc, idx) => ({
+                            value: acc,
+                            itemStyle: {
+                                color: modelColors[idx % modelColors.length],
+                                borderRadius: [0, 4, 4, 0]
+                            }
+                        })),
+                        label: {
+                            show: true,
+                            position: 'right',
+                            formatter: '{c}%',
+                            fontSize: 10,
+                            fontWeight: 'bold'
+                        }
+                    }]
+                };
+                
+                chart.setOption(option);
+            }
+            return chart;
+        }
+
+        // 创建分类准确率对比图表
+        function createCategoryChart(results) {
+            const container = document.getElementById('categoryChart');
+            const subtasks = results[0].data.group_subtasks?.bili_hardcore || [];
+            
+            // 移除强制最小宽度逻辑，让图表自适应容器宽度
+            container.style.width = '100%';
+            container.parentElement.classList.remove('scrollable-x');
+
+            const chart = echarts.init(container, null, { renderer: 'svg' });
+            const categories = subtasks.map(taskName => categoryMap[taskName] || taskName);
+            
+            let option;
+            if (results.length === 1) {
+                const data = results[0].data;
+                const accuracies = subtasks.map(taskName => {
+                    const res = data.results[taskName];
+                    return res ? parseFloat((res['acc,none'] * 100).toFixed(2)) : 0;
+                });
+                
+                option = {
+                    toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    legend: {
+                        top: 0,
+                        left: 'center',
+                        textStyle: { fontSize: 10 },
+                        itemWidth: 10,
+                        itemHeight: 10
+                    },
+                    grid: { left: '1%', right: '1%', top: '10%', bottom: '5%', containLabel: true },
+                    xAxis: { 
+                        type: 'category', 
+                        data: categories, 
+                        axisLabel: { 
+                            fontSize: 10, 
+                            interval: 0
+                        } 
+                    },
+                    yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
+                    series: [{
+                        name: results[0].modelName.split('/').pop() || results[0].modelName,
+                        type: 'bar',
+                        data: accuracies.map(acc => ({
+                            value: acc,
+                            itemStyle: { color: acc >= 50 ? '#52c41a' : (acc >= 30 ? '#faad14' : '#ff4d4f'), borderRadius: [4, 4, 0, 0] }
+                        })),
+                        label: { show: true, position: 'top', formatter: '{c}%', fontSize: 10 }
+                    }]
+                };
+            } else {
+                const series = results.map((result, modelIdx) => ({
+                    name: result.modelName.split('/').pop() || result.modelName,
+                    type: 'bar',
+                    barGap: 0,
+                    data: subtasks.map(taskName => {
+                        const res = result.data.results[taskName];
+                        return res ? parseFloat((res['acc,none'] * 100).toFixed(2)) : 0;
+                    }),
+                    itemStyle: { color: modelColors[modelIdx % modelColors.length], borderRadius: [2, 2, 0, 0] },
+                    label: { show: true, position: 'top', formatter: '{c}%', fontSize: 9 }
+                }));
+                
+                option = {
+                    toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    legend: {
+                        type: 'scroll',
+                        top: 0,
+                        left: 'center',
+                        textStyle: { fontSize: 10 },
+                        itemWidth: 10,
+                        itemHeight: 10
+                    },
+                    grid: { left: '1%', right: '1%', top: '10%', bottom: '5%', containLabel: true },
+                    xAxis: { 
+                        type: 'category', 
+                        data: categories, 
+                        axisLabel: { 
+                            fontSize: 10, 
+                            interval: 0
+                        } 
+                    },
+                    yAxis: { type: 'value', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
+                    series: series
+                };
+            }
+            
+            chart.setOption(option);
+            return chart;
+        }
+
+        // 创建雷达图
+        function createRadarChart(results) {
+            const chart = echarts.init(document.getElementById('radarChart'), null, { renderer: 'svg' });
+            const subtasks = results[0].data.group_subtasks?.bili_hardcore || [];
+            const categories = subtasks.map(taskName => categoryMap[taskName] || taskName);
+            
+            const indicator = categories.map(cat => ({ name: cat, max: 100 }));
+            
+            // 将每个模型作为一个独立的 series，这样 focus: 'series' 才能生效
+            const series = results.map((result, modelIdx) => ({
+                name: result.modelName.split('/').pop() || result.modelName,
+                type: 'radar',
+                data: [{
+                    value: subtasks.map(taskName => {
+                        const res = result.data.results[taskName];
+                        return res ? parseFloat((res['acc,none'] * 100).toFixed(2)) : 0;
+                    }),
+                    name: result.modelName.split('/').pop() || result.modelName
+                }],
+                itemStyle: { color: modelColors[modelIdx % modelColors.length] },
+                areaStyle: { opacity: 0.05 },
+                symbol: 'circle',
+                symbolSize: 4,
+                lineStyle: { width: 2 },
+                emphasis: {
+                    focus: 'series',
+                    lineStyle: { width: 4 },
+                    areaStyle: { opacity: 0.3 }
+                }
+            }));
+            
+            const option = {
+                toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
+                tooltip: {
+                    trigger: 'item',
+                    confine: true
+                },
+                legend: {
+                    type: 'scroll',
+                    bottom: 0,
+                    left: 'center',
+                    textStyle: { fontSize: 10 },
+                    itemWidth: 10,
+                    itemHeight: 10
+                },
+                radar: {
+                    indicator: indicator,
+                    radius: '75%',
+                    center: ['50%', '50%'],
+                    splitNumber: 4,
+                    axisName: { color: '#8c8c8c', fontSize: 10 },
+                    splitArea: { areaStyle: { color: ['#fff', '#fafafa'] } },
+                    splitLine: { lineStyle: { color: '#f0f0f0' } }
+                },
+                series: series
+            };
+            
+            chart.setOption(option);
+            return chart;
+        }
+
+        // 创建详细数据热力图（替代表格）
+        function createDataHeatmap(results) {
+            const container = document.getElementById('data-table');
+            const subtasks = results[0].data.group_subtasks.bili_hardcore || [];
+            const categoryLabels = subtasks.map(name => categoryMap[name] || name);
+            const modelNames = results.map(r => {
+                const name = r.modelName.split('/').pop() || r.modelName;
+                return name;
+            });
+            const yLabels = [...categoryLabels, '总体平均'];
+            const heatmapData = [];
+
+            // 动态调整容器高度，增加垂直间隔
+            const rowHeight = 35;
+            const extraHeight = 120;
+            container.style.height = (yLabels.length * rowHeight + extraHeight) + 'px';
+            container.parentElement.classList.add('scrollable-y');
+
+            const pushRow = (values, rowIndex) => {
+                const validValues = values.filter(v => v !== null && !Number.isNaN(v));
+                const rowMax = validValues.length ? Math.max(...validValues) : 0;
+                const rowMin = validValues.length ? Math.min(...validValues) : 0;
+
+                values.forEach((val, colIndex) => {
+                    if (val === null || Number.isNaN(val)) {
+                        heatmapData.push({
+                            value: [colIndex, rowIndex, null],
+                            itemStyle: { color: '#f7f7f7', borderColor: '#f0f0f0', borderWidth: 1 },
+                            label: { show: false }
+                        });
+                        return;
+                    }
+
+                    const ratio = rowMax !== rowMin ? (val - rowMin) / (rowMax - rowMin) : 0.6;
+                    const hue = 10 + ratio * 120; // 10=orange-red -> 130=green
+
+                    heatmapData.push({
+                        value: [colIndex, rowIndex, val],
+                        itemStyle: {
+                            color: `hsla(${hue}, 70%, 50%, 0.22)`,
+                            borderColor: '#e6e6e6',
+                            borderWidth: 1
+                        },
+                        label: {
+                            show: true,
+                            formatter: `${val.toFixed(2)}%`,
+                            color: `hsl(${hue}, 80%, 20%)`,
+                            fontWeight: rowMax !== rowMin && val === rowMax ? 'bold' : 'normal',
+                            fontSize: 11
+                        }
+                    });
+                });
+            };
+
+            subtasks.forEach((taskName, rowIndex) => {
+                const rowValues = results.map(r => {
+                    const res = r.data.results[taskName];
+                    return res ? parseFloat((res['acc,none'] * 100).toFixed(2)) : null;
+                });
+                pushRow(rowValues, rowIndex);
+            });
+
+            const overallValues = results.map(r => {
+                const res = r.data.results;
+                if (res.bili_hardcore) return parseFloat((res.bili_hardcore['acc,none'] * 100).toFixed(2));
+                for (const key in res) {
+                    if (res[key] && res[key]['acc,none'] !== undefined) {
+                        return parseFloat((res[key]['acc,none'] * 100).toFixed(2));
+                    }
+                }
+                return null;
+            });
+            pushRow(overallValues, yLabels.length - 1);
+
+            const chart = echarts.init(container, null, { renderer: 'svg' });
+
+            const option = {
+                toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
+                tooltip: {
+                    trigger: 'item',
+                    confine: true,
+                    formatter: params => {
+                        const [x, y, val] = params.value;
+                        const label = yLabels[y];
+                        const model = modelNames[x];
+                        if (val === null || Number.isNaN(val)) return `${label}<br/>${model}: 无数据`;
+                        return `${label}<br/>${model}: ${val.toFixed(2)}%`;
+                    }
+                },
+                grid: {
+                    left: 10,
+                    right: 10,
+                    top: 10,
+                    bottom: 10,
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: modelNames,
+                    axisLabel: { 
+                        interval: 0, 
+                        rotate: 0, 
+                        fontSize: 10, 
+                        color: '#595959',
+                        formatter: function(value) {
+                            return value.length > 12 ? value.substring(0, 10) + '...' : value;
+                        }
+                    },
+                    axisTick: { show: false },
+                    boundaryGap: true
+                },
+                yAxis: {
+                    type: 'category',
+                    data: yLabels,
+                    inverse: true,
+                    axisLabel: { fontSize: 11, color: '#262626', padding: [5, 0, 5, 0] },
+                    axisTick: { show: false },
+                    splitLine: { show: false },
+                    boundaryGap: true
+                },
+                visualMap: { show: false, min: 0, max: 100 },
+                series: [{
+                    type: 'heatmap',
+                    data: heatmapData,
+                    label: { show: false },
+                    itemStyle: { borderWidth: 1, borderColor: '#e6e6e6' },
+                    emphasis: { focus: 'self' },
+                    progressive: 0
+                }]
+            };
+
+            chart.setOption(option);
+            return chart;
+        }
+
+        // 主函数
+        async function init() {
+            try {
+                const results = await loadMultipleData();
+                
+                // 更新标题信息
+                if (results.length === 1) {
+                    document.getElementById('model-info').textContent = `模型: ${results[0].modelName}`;
+                } else {
+                    document.getElementById('model-info').textContent = `对比 ${results.length} 个模型`;
+                }
+
+                const charts = [
+                    createOverallChart(results),
+                    createCategoryChart(results),
+                    createRadarChart(results),
+                    createDataHeatmap(results)
+                ];
+                
+                // 显示并配置导出按钮
+                const exportBtn = document.getElementById('export-svg-btn');
+                exportBtn.style.display = 'block';
+                exportBtn.onclick = () => {
+                    // 导出图表
+                    charts.forEach((chart, idx) => {
+                        if (!chart) return;
+                        const url = chart.getConnectedDataURL({
+                            type: 'svg',
+                            backgroundColor: '#fff',
+                            excludeComponents: ['toolbox']
+                        });
+                        const a = document.createElement('a');
+                        const chartNames = ['overall_accuracy', 'category_comparison', 'radar_distribution', 'detailed_heatmap'];
+                        a.download = `${chartNames[idx] || 'chart_' + idx}.svg`;
+                        a.href = url;
+                        a.click();
+                    });
+                };
+                
+                window.addEventListener('resize', () => {
+                    charts.forEach(chart => chart && chart.resize());
+                });
+                
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').innerHTML = `
+                    <div style="margin-bottom: 10px; font-weight: bold;">加载数据失败: ${error.message}</div>
+                    <div style="font-size: 12px; color: #666; line-height: 1.8;">
+                        <strong>使用方法：</strong><br/>
+                        多个模型对比：results_visualization.html?files=模型1/results.json,模型2/results.json<br/>
+                        单个模型：results_visualization.html?files=模型目录/results.json<br/><br/>
+                        <strong>说明：</strong>文件路径相对于当前 HTML 文件所在的目录（results/）
+                    </div>
+                `;
+                console.error('Error:', error);
+            }
+        }
+
+        // 页面加载时初始化
+        init();
+    </script>
+</body>
+</html>

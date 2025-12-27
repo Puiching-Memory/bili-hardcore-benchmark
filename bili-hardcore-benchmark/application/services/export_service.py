@@ -71,7 +71,8 @@ class ExportService:
         self,
         benchmark: Benchmark,
         output_dir: Path,
-        version: str
+        version: str,
+        split_by_category: bool = False
     ) -> BenchmarkStatistics:
         """导出为 HuggingFace 格式
         
@@ -81,6 +82,7 @@ class ExportService:
             benchmark: 基准测试实例
             output_dir: 输出目录
             version: 版本号
+            split_by_category: 是否按分类导出子数据集
             
         Returns:
             导出题目的统计信息
@@ -97,14 +99,49 @@ class ExportService:
                 completion_rate=0.0
             )
         
-        logger.info(f"准备导出 {len(complete_questions)} 道完整题目")
-        
-        try:
-            self.hf_exporter.export(complete_questions, output_dir, version)
-            logger.info(f"HuggingFace 格式已导出到: {output_dir}")
-        except Exception as e:
-            logger.error(f"导出 HuggingFace 格式失败: {e}")
-            raise
+        if split_by_category:
+            # 按分类分组
+            from collections import defaultdict
+            questions_by_category = defaultdict(list)
+            for q in complete_questions:
+                category = q.category or "未分类"
+                questions_by_category[category].append(q)
+            
+            logger.info(f"准备按分类导出 {len(complete_questions)} 道完整题目，共 {len(questions_by_category)} 个分类")
+            
+            # 为每个分类导出子数据集
+            # 分类名称映射（用于文件路径）
+            category_name_map = {
+                "体育": "体育",
+                "文史": "文史",
+                "知识": "知识",
+                "动画/漫画": "动画_漫画",
+                "影视": "影视",
+                "游戏": "游戏",
+                "音乐": "音乐",
+                "鬼畜": "鬼畜"
+            }
+            
+            for category, cat_questions in questions_by_category.items():
+                # 使用映射后的分类名称，用于文件路径
+                safe_category = category_name_map.get(category, category.replace("/", "_").replace("\\", "_"))
+                cat_output_dir = output_dir / safe_category
+                
+                try:
+                    self.hf_exporter.export(cat_questions, cat_output_dir, version)
+                    logger.info(f"✅ {category}: {len(cat_questions)} 道题目已导出到 {cat_output_dir}")
+                except Exception as e:
+                    logger.error(f"❌ 导出分类 {category} 失败: {e}")
+                    raise
+        else:
+            logger.info(f"准备导出 {len(complete_questions)} 道完整题目")
+            
+            try:
+                self.hf_exporter.export(complete_questions, output_dir, version)
+                logger.info(f"HuggingFace 格式已导出到: {output_dir}")
+            except Exception as e:
+                logger.error(f"导出 HuggingFace 格式失败: {e}")
+                raise
         
         # 返回导出题目的统计信息
         stats = benchmark.get_statistics()

@@ -153,6 +153,12 @@ cython_debug/
 benchmark_data/**
 !benchmark_data/dashboard.html
 
+# 评估结果文件（包含模型评估结果）
+# 忽略 results 目录下的所有 JSON 和 JSONL 文件，但保留 results_visualization.html
+results/**/*.json
+results/**/*.jsonl
+!results/results_visualization.html
+
 # 日志文件
 logs/
 *.log

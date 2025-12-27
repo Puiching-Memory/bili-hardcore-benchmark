@@ -1,0 +1,18 @@
+group: bili_hardcore
+task:
+  - bili_hardcore_sports
+  - bili_hardcore_literature
+  - bili_hardcore_knowledge
+  - bili_hardcore_anime
+  - bili_hardcore_movie
+  - bili_hardcore_game
+  - bili_hardcore_music
+  - bili_hardcore_kichiku
+aggregate_metric_list:
+  - metric: acc
+    aggregation: mean
+    weight_by_size: true
+metadata:
+  version: 1.0
+  description: "Bilibili 硬核会员答题 Benchmark - 所有分类"
+

@@ -11,6 +11,21 @@
             padding: 0;
             box-sizing: border-box;
         }
+        /* 自定义滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d9d9d9;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #bfbfbf;
+        }
         html, body {
             height: 100%;
             overflow: hidden;
@@ -67,6 +82,34 @@
             color: #ffeb3b;
             font-size: 12px;
             margin-left: 8px;
+        }
+        .filter-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 8px;
+        }
+        .filter-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .filter-select {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            outline: none;
+        }
+        .filter-select:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .filter-select option {
+            background-color: #1976D2;
+            color: white;
         }
         .content {
             flex: 1;
@@ -380,6 +423,16 @@
                 <input type="text" id="search-input" class="search-input" placeholder="输入题目ID搜索..." onkeypress="handleSearchKeyPress(event)">
                 <button class="search-button" onclick="searchQuestion()">搜索</button>
                 <span id="search-error" class="search-error" style="display: none;"></span>
+                <div class="filter-container">
+                    <span class="filter-label">尝试次数:</span>
+                    <select id="attempts-filter" class="filter-select" onchange="applyAttemptsFilter()">
+                        <option value="all">全部</option>
+                        <option value="1">1次</option>
+                        <option value="2">2次</option>
+                        <option value="3">3次</option>
+                        <option value="4">4次</option>
+                    </select>
+                </div>
             </div>
         </div>
         <div class="content">
@@ -601,12 +654,18 @@
         // 存储所有题目数据（用于详情显示）
         let allQuestionsData = {};
         
+        // 存储原始题目数据（用于筛选）
+        let originalQuestionsData = {};
+        
         // 当前题目导航信息
         let currentQuestionList = [];
         let currentQuestionIndex = -1;
         
         // 最后点击的题目ID（用于高亮显示）
         let lastClickedQuestionId = null;
+        
+        // 当前筛选条件
+        let currentAttemptsFilter = 'all';
         
         // 存储每个图表的题目ID列表（用于高亮）
         const chartQuestionIds = {};
@@ -1072,6 +1131,151 @@
                 updateChartHighlight(containerId, chart);
             });
         }
+        
+        // 根据尝试次数筛选题目
+        function filterQuestionsByAttempts(questions, filterValue) {
+            if (filterValue === 'all') {
+                return questions;
+            }
+            
+            const filtered = {};
+            const targetAttempts = parseInt(filterValue);
+            
+            for (const [qid, question] of Object.entries(questions)) {
+                const attempts = question.attempts || 0;
+                if (attempts === targetAttempts) {
+                    filtered[qid] = question;
+                }
+            }
+            
+            return filtered;
+        }
+        
+        // 应用尝试次数筛选
+        function applyAttemptsFilter() {
+            const filterSelect = document.getElementById('attempts-filter');
+            currentAttemptsFilter = filterSelect.value;
+            
+            // 从原始数据筛选
+            const filteredQuestions = filterQuestionsByAttempts(originalQuestionsData, currentAttemptsFilter);
+            
+            // 更新所有题目数据
+            allQuestionsData = filteredQuestions;
+            
+            // 重新渲染所有内容
+            renderDashboard(filteredQuestions);
+        }
+        
+        // 渲染仪表盘
+        function renderDashboard(questions) {
+            if (Object.keys(questions).length === 0) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = '筛选后没有找到题目数据';
+                return;
+            }
+            
+            // 清除之前的图表
+            Object.values(chartInstances).forEach(chart => chart.dispose());
+            Object.keys(chartInstances).forEach(key => delete chartInstances[key]);
+            
+            // 清除标签页
+            const tabsHeader = document.getElementById('tabs-header');
+            const tabsContent = document.getElementById('tabs-content');
+            tabsHeader.innerHTML = '';
+            tabsContent.innerHTML = '';
+            
+            const categories = groupByCategory(questions);
+            const sortedCategories = Object.entries(categories).sort((a, b) => {
+                if (a[0] === '未分类') return 1;
+                if (b[0] === '未分类') return -1;
+                return b[1].length - a[1].length;
+            });
+            
+            // 保存分类映射（用于搜索）
+            Object.keys(categoryMap).forEach(key => delete categoryMap[key]);
+            sortedCategories.forEach(([cat, catQuestions]) => {
+                categoryMap[cat] = catQuestions;
+            });
+            
+            const catStats = sortedCategories.map(([cat, catQuestions]) => {
+                const complete = Object.values(catQuestions).filter(q => q.correct_answer !== undefined).length;
+                const total = Object.keys(catQuestions).length;
+                return {
+                    name: cat,
+                    complete: complete,
+                    total: total,
+                    pct: total > 0 ? (complete / total * 100) : 0
+                };
+            });
+            
+            const totalQuestions = Object.keys(questions).length;
+            const completeQuestions = Object.values(questions).filter(q => q.correct_answer !== undefined).length;
+            const partialQuestions = Object.values(questions).filter(q => 
+                q.correct_answer === undefined && q.wrong_answers && q.wrong_answers.length > 0
+            ).length;
+            const unknownQuestions = totalQuestions - completeQuestions - partialQuestions;
+            
+            createSummaryStats(totalQuestions, completeQuestions, partialQuestions, unknownQuestions);
+            createOverviewTable(catStats);
+            createStatistics(catStats);
+            
+            // 创建标签页和热力图
+            sortedCategories.forEach(([category, catQuestions], index) => {
+                // 创建标签按钮
+                const button = document.createElement('button');
+                button.className = 'tab-button' + (index === 0 ? ' active' : '');
+                button.textContent = `${category} (${Object.keys(catQuestions).length})`;
+                const containerId = `heatmap-${index}`;
+                
+                // 保存分类到按钮的映射（用于搜索）
+                categoryButtonMap[category] = button;
+                
+                button.onclick = () => {
+                    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+                    button.classList.add('active');
+                    const panel = document.getElementById(`panel-${index}`);
+                    panel.classList.add('active');
+                    
+                    // 切换标签页后，重新调整图表尺寸
+                    if (chartInstances[containerId]) {
+                        requestAnimationFrame(() => {
+                            setTimeout(() => {
+                                chartInstances[containerId].resize();
+                            }, 50);
+                        });
+                    }
+                };
+                tabsHeader.appendChild(button);
+                
+                // 创建面板
+                const panel = document.createElement('div');
+                panel.id = `panel-${index}`;
+                panel.className = 'tab-panel' + (index === 0 ? ' active' : '');
+                const heatmapDiv = document.createElement('div');
+                heatmapDiv.id = containerId;
+                heatmapDiv.className = 'heatmap-container';
+                panel.appendChild(heatmapDiv);
+                tabsContent.appendChild(panel);
+                
+                // 延迟创建图表以确保容器已渲染
+                if (index === 0) {
+                    requestAnimationFrame(() => {
+                        createHeatmap(containerId, category, catQuestions);
+                        setTimeout(() => {
+                            if (chartInstances[containerId]) {
+                                chartInstances[containerId].resize();
+                            }
+                        }, 100);
+                    });
+                } else {
+                    setTimeout(() => {
+                        createHeatmap(containerId, category, catQuestions);
+                    }, 200);
+                }
+            });
+        }
 
         // 主函数
         async function main() {
@@ -1082,111 +1286,22 @@
                     throw new Error('没有找到题目数据');
                 }
                 
+                // 保存原始题目数据
+                originalQuestionsData = questions;
+                
                 // 保存所有题目数据供详情显示使用
                 allQuestionsData = questions;
                 
-                const categories = groupByCategory(questions);
-                const sortedCategories = Object.entries(categories).sort((a, b) => {
-                    if (a[0] === '未分类') return 1;
-                    if (b[0] === '未分类') return -1;
-                    return b[1].length - a[1].length;
-                });
-                
-                // 保存分类映射（用于搜索）
-                sortedCategories.forEach(([cat, catQuestions]) => {
-                    categoryMap[cat] = catQuestions;
-                });
-                
-                const catStats = sortedCategories.map(([cat, catQuestions]) => {
-                    const complete = Object.values(catQuestions).filter(q => q.correct_answer !== undefined).length;
-                    const total = Object.keys(catQuestions).length;
-                    return {
-                        name: cat,
-                        complete: complete,
-                        total: total,
-                        pct: total > 0 ? (complete / total * 100) : 0
-                    };
-                });
-                
-                const totalQuestions = Object.keys(questions).length;
-                const completeQuestions = Object.values(questions).filter(q => q.correct_answer !== undefined).length;
-                const partialQuestions = Object.values(questions).filter(q => 
-                    q.correct_answer === undefined && q.wrong_answers && q.wrong_answers.length > 0
-                ).length;
-                const unknownQuestions = totalQuestions - completeQuestions - partialQuestions;
-                
                 document.getElementById('loading').style.display = 'none';
                 
-                createSummaryStats(totalQuestions, completeQuestions, partialQuestions, unknownQuestions);
-                createOverviewTable(catStats);
-                createStatistics(catStats);
-                
-                // 创建标签页和热力图
-                const tabsHeader = document.getElementById('tabs-header');
-                const tabsContent = document.getElementById('tabs-content');
-                
-                sortedCategories.forEach(([category, catQuestions], index) => {
-                    // 创建标签按钮
-                    const button = document.createElement('button');
-                    button.className = 'tab-button' + (index === 0 ? ' active' : '');
-                    button.textContent = `${category} (${Object.keys(catQuestions).length})`;
-                    const containerId = `heatmap-${index}`;
-                    
-                    // 保存分类到按钮的映射（用于搜索）
-                    categoryButtonMap[category] = button;
-                    
-                    button.onclick = () => {
-                        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-                        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-                        button.classList.add('active');
-                        const panel = document.getElementById(`panel-${index}`);
-                        panel.classList.add('active');
-                        
-                        // 切换标签页后，重新调整图表尺寸
-                        if (chartInstances[containerId]) {
-                            // 使用 requestAnimationFrame 确保 DOM 已更新
-                            requestAnimationFrame(() => {
-                                setTimeout(() => {
-                                    chartInstances[containerId].resize();
-                                }, 50);
-                            });
-                        }
-                    };
-                    tabsHeader.appendChild(button);
-                    
-                    // 创建面板
-                    const panel = document.createElement('div');
-                    panel.id = `panel-${index}`;
-                    panel.className = 'tab-panel' + (index === 0 ? ' active' : '');
-                    const heatmapDiv = document.createElement('div');
-                    heatmapDiv.id = containerId;
-                    heatmapDiv.className = 'heatmap-container';
-                    panel.appendChild(heatmapDiv);
-                    tabsContent.appendChild(panel);
-                    
-                    // 延迟创建图表以确保容器已渲染
-                    // 对于第一个标签页，立即创建；其他标签页延迟创建
-                    if (index === 0) {
-                        // 第一个标签页立即创建
-                        requestAnimationFrame(() => {
-                            createHeatmap(containerId, category, catQuestions);
-                            // 确保图表尺寸正确
-                            setTimeout(() => {
-                                if (chartInstances[containerId]) {
-                                    chartInstances[containerId].resize();
-                                }
-                            }, 100);
-                        });
-                    } else {
-                        // 其他标签页延迟创建
-                        setTimeout(() => {
-                            createHeatmap(containerId, category, catQuestions);
-                        }, 200);
-                    }
-                });
+                // 渲染仪表盘
+                renderDashboard(questions);
                 
             } catch (error) {
                 console.error('Error:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = `加载数据失败: ${error.message}`;
             }
         }
 

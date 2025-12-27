@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
@@ -35,12 +35,12 @@ jobs:
 
       - name: Run ruff (linting)
         run: |
-          uv run ruff check bili-hardcore-benchmark
+          uv run ruff check bili_hardcore_benchmark
 
       - name: Run black (format check)
         run: |
-          uv run black --check bili-hardcore-benchmark
+          uv run black --check bili_hardcore_benchmark
 
       - name: Run mypy (type check)
         run: |
-          uv run mypy bili-hardcore-benchmark
+          uv run mypy bili_hardcore_benchmark

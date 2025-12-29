@@ -3,8 +3,6 @@
 使用 OpenAI API（或兼容接口）进行答题预测。
 """
 
-import time
-
 from loguru import logger
 from openai import OpenAI
 
@@ -16,8 +14,7 @@ class OpenAIProvider(AIProviderBase):
     """OpenAI API 提供者"""
 
     # 提示词模板
-    PROMPT_TEMPLATE = """当前时间：{timestamp}
-你是一个高效精准的答题专家，面对选择题时，直接根据问题和选项判断正确答案，
+    PROMPT_TEMPLATE = """你是一个高效精准的答题专家，面对选择题时，直接根据问题和选项判断正确答案，
 并返回对应选项的序号（1, 2, 3, 4）。
 
 示例：
@@ -62,9 +59,7 @@ class OpenAIProvider(AIProviderBase):
         formatted_question = f"题目: {question}\n选项: {options_text}"
 
         # 构造完整提示词
-        prompt = self.PROMPT_TEMPLATE.format(
-            timestamp=int(time.time()), question=formatted_question
-        )
+        prompt = self.PROMPT_TEMPLATE.format(question=formatted_question)
 
         try:
             logger.debug(f"调用 AI 预测: {question[:50]}...")

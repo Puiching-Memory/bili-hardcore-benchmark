@@ -14,7 +14,7 @@ def run_quiz(container: Container, login: LoginData) -> None:
         raise AuthError("登录信息不完整，缺少 CSRF")
     senior = container.get_senior_client(login.access_token, login.csrf)
     quiz, benchmark = container.quiz_service, container.benchmark_service
-    
+
     result = senior.get_result()
     score = result.score
     category_scores = {s.category: s.score for s in result.scores}
@@ -41,25 +41,27 @@ def run_quiz(container: Container, login: LoginData) -> None:
                     int(q.id), q_data.answers[idx].ans_hash, q_data.answers[idx].ans_text
                 )
                 time.sleep(0.5)
-                
+
                 new_result = senior.get_result()
                 new_score = new_result.score
-                
+
                 if new_score > score:
                     # 通过分数变化推算分类
                     for s in new_result.scores:
                         if s.score > category_scores.get(s.category, 0):
                             q.category = s.category
-                            logger.success(f"✅ 回答正确! 分区: {s.category} | 分数: {score} -> {new_score}")
+                            logger.success(
+                                f"✅ 回答正确! 分区: {s.category} | 分数: {score} -> {new_score}"
+                            )
                             break
                     else:
                         logger.success(f"✅ 回答正确! 分数: {score} -> {new_score}")
-                    
+
                     benchmark.record_correct_answer(q.id, idx)
                 else:
                     logger.warning(f"❌ 回答错误. 分数未变: {score}")
                     benchmark.record_wrong_answer(q.id, idx)
-                
+
                 score = new_score
                 category_scores = {s.category: s.score for s in new_result.scores}
             time.sleep(1)

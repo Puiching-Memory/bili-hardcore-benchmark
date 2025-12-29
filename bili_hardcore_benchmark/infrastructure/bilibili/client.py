@@ -42,9 +42,7 @@ class BilibiliClient:
         params: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> T:
-        resp = self.client.request(
-            method, url, params=self._app_sign(params or {}), **kwargs
-        )
+        resp = self.client.request(method, url, params=self._app_sign(params or {}), **kwargs)
         adapter: TypeAdapter[BiliResponse[T]] = TypeAdapter(BiliResponse[model])  # type: ignore
         result = adapter.validate_python(resp.json())
         if not result.is_success:
@@ -56,7 +54,5 @@ class BilibiliClient:
     def get(self, url: str, model: Type[T], params: Optional[Dict[str, Any]] = None) -> T:
         return self._request("GET", url, model, params)
 
-    def post(
-        self, url: str, model: Type[T], params: Optional[Dict[str, Any]] = None
-    ) -> T:
+    def post(self, url: str, model: Type[T], params: Optional[Dict[str, Any]] = None) -> T:
         return self._request("POST", url, model, params)

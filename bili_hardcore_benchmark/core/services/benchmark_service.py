@@ -1,4 +1,4 @@
-from typing import Any, Dict, Protocol
+from typing import Any, Dict, Optional, Protocol
 
 from ...core.models import Benchmark, Question
 
@@ -32,6 +32,7 @@ class BenchmarkService:
 
     def record_attempt(self, qid: str) -> None:
         from datetime import datetime
+
         q = self.benchmark.questions[qid]
         q.attempts += 1
         q.last_attempt = datetime.now()

@@ -79,7 +79,7 @@ class BiliQuestion(BaseModel):
     question_num: int
 
     @property
-    def choices(self) -> List[str] :
+    def choices(self) -> List[str]:
         return [a.ans_text for a in self.answers]
 
 
@@ -99,9 +99,7 @@ class Benchmark(BaseModel):
 
     def get_stats(self) -> str:
         total = len(self.questions)
-        complete = sum(
-            1 for q in self.questions.values() if q.correct_answer is not None
-        )
+        complete = sum(1 for q in self.questions.values() if q.correct_answer is not None)
         return (
             f"Total: {total}, Complete: {complete} ({complete/total*100:.1f}%)"
             if total

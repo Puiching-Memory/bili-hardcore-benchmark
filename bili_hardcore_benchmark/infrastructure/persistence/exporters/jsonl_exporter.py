@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from loguru import logger
 
 if TYPE_CHECKING:
-    from ....application.models.question import Question
+    from ....core.models import Question
 
 
 class JSONLExporter:
@@ -31,7 +31,7 @@ class JSONLExporter:
 
         # 验证所有题目都是完整的
         for q in questions:
-            if not q.is_complete():
+            if not q.is_complete:
                 raise ValueError(f"题目 {q.id} 不完整，无法导出")
 
         # 确保输出目录存在

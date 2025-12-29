@@ -45,8 +45,8 @@ OPENAI_API_KEY=your_api_key_here
 **运行**：
 
 ```bash
-uv run python -m bili-hardcore-benchmark.main    # 收集数据
-uv run python -m bili-hardcore-benchmark.export  # 导出数据集
+uv run python -m bili_hardcore_benchmark.main    # 收集数据
+uv run python -m bili_hardcore_benchmark.export  # 导出数据集
 ```
 
 ## 数据说明

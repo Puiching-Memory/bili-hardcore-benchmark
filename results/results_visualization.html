@@ -144,6 +144,7 @@
             flex-shrink: 0;
             display: flex;
             align-items: center;
+            justify-content: space-between;
         }
         .card-title::before {
             content: "";
@@ -153,6 +154,34 @@
             background: #1890ff;
             margin-right: 6px;
             border-radius: 1px;
+        }
+        .export-chart-btn {
+            padding: 3px 8px;
+            background: #fff;
+            border: 1px solid #d9d9d9;
+            color: #595959;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .export-chart-btn:hover {
+            color: #1890ff;
+            border-color: #1890ff;
+            background: #f0f7ff;
+        }
+        .export-chart-btn svg {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+        }
+        .card-title-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
         }
         .chart-container {
             flex: 1;
@@ -242,29 +271,74 @@
                     <h1>Bilibili 硬核会员答题 Benchmark 评估结果</h1>
                     <div class="subtitle" id="model-info">正在加载...</div>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button id="export-svg-btn" style="display: none; padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; border-radius: 4px; cursor: pointer; font-size: 12px; transition: all 0.3s;">导出图表为 SVG</button>
-                </div>
             </div>
         </div>
         <div class="content">
             <div class="left-panel">
                 <div class="card" style="flex: 1;">
-                    <div class="card-title">模型对比（总体准确率）</div>
+                    <div class="card-title">
+                        <span>模型对比（总体准确率）</span>
+                        <div class="card-title-actions">
+                            <button class="export-chart-btn" onclick="exportChart('overallChart', 'overall_accuracy', 'png')">
+                                <svg viewBox="0 0 16 16"><path d="M8 12l-4-4h2.5V3h3v5H12l-4 4zm6.5-1v4h-13V11h-1v4a1 1 0 001 1h13a1 1 0 001-1v-4h-1z"/></svg>
+                                PNG
+                            </button>
+                            <button class="export-chart-btn" onclick="exportChart('overallChart', 'overall_accuracy', 'svg')">
+                                <svg viewBox="0 0 16 16"><path d="M4 3h8v2H4V3zm-1 4h10v7H3V7zm1 1v5h8V8H4z"/></svg>
+                                SVG
+                            </button>
+                        </div>
+                    </div>
                     <div id="overallChart" class="chart-container"></div>
                 </div>
                 <div class="card" style="flex: 1.2;">
-                    <div class="card-title">详细数据</div>
+                    <div class="card-title">
+                        <span>详细数据</span>
+                        <div class="card-title-actions">
+                            <button class="export-chart-btn" onclick="exportChart('data-table', 'detailed_heatmap', 'png')">
+                                <svg viewBox="0 0 16 16"><path d="M8 12l-4-4h2.5V3h3v5H12l-4 4zm6.5-1v4h-13V11h-1v4a1 1 0 001 1h13a1 1 0 001-1v-4h-1z"/></svg>
+                                PNG
+                            </button>
+                            <button class="export-chart-btn" onclick="exportChart('data-table', 'detailed_heatmap', 'svg')">
+                                <svg viewBox="0 0 16 16"><path d="M4 3h8v2H4V3zm-1 4h10v7H3V7zm1 1v5h8V8H4z"/></svg>
+                                SVG
+                            </button>
+                        </div>
+                    </div>
                     <div id="data-table" class="data-table-container chart-container"></div>
                 </div>
             </div>
             <div class="right-panel">
                 <div class="card" style="flex: 1.2;">
-                    <div class="card-title">各分类准确率对比</div>
+                    <div class="card-title">
+                        <span>各分类准确率对比</span>
+                        <div class="card-title-actions">
+                            <button class="export-chart-btn" onclick="exportChart('categoryChart', 'category_comparison', 'png')">
+                                <svg viewBox="0 0 16 16"><path d="M8 12l-4-4h2.5V3h3v5H12l-4 4zm6.5-1v4h-13V11h-1v4a1 1 0 001 1h13a1 1 0 001-1v-4h-1z"/></svg>
+                                PNG
+                            </button>
+                            <button class="export-chart-btn" onclick="exportChart('categoryChart', 'category_comparison', 'svg')">
+                                <svg viewBox="0 0 16 16"><path d="M4 3h8v2H4V3zm-1 4h10v7H3V7zm1 1v5h8V8H4z"/></svg>
+                                SVG
+                            </button>
+                        </div>
+                    </div>
                     <div id="categoryChart" class="chart-container"></div>
                 </div>
                 <div class="card" style="flex: 1;">
-                    <div class="card-title">分类准确率雷达图</div>
+                    <div class="card-title">
+                        <span>分类准确率雷达图</span>
+                        <div class="card-title-actions">
+                            <button class="export-chart-btn" onclick="exportChart('radarChart', 'radar_distribution', 'png')">
+                                <svg viewBox="0 0 16 16"><path d="M8 12l-4-4h2.5V3h3v5H12l-4 4zm6.5-1v4h-13V11h-1v4a1 1 0 001 1h13a1 1 0 001-1v-4h-1z"/></svg>
+                                PNG
+                            </button>
+                            <button class="export-chart-btn" onclick="exportChart('radarChart', 'radar_distribution', 'svg')">
+                                <svg viewBox="0 0 16 16"><path d="M4 3h8v2H4V3zm-1 4h10v7H3V7zm1 1v5h8V8H4z"/></svg>
+                                SVG
+                            </button>
+                        </div>
+                    </div>
                     <div id="radarChart" class="chart-container"></div>
                 </div>
             </div>
@@ -400,7 +474,6 @@
                 });
                 
                 const option = {
-                    toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
                     tooltip: {
                         trigger: 'item',
                         formatter: '{b}: {c}题 ({d}%)'
@@ -450,7 +523,6 @@
                 const accuracies = results.map(r => getOverallAcc(r));
                 
                 const option = {
-                    toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: { type: 'shadow' },
@@ -529,7 +601,6 @@
                 });
                 
                 option = {
-                    toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
                     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
                     legend: {
                         top: 0,
@@ -572,7 +643,6 @@
                 }));
                 
                 option = {
-                    toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
                     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
                     legend: {
                         type: 'scroll',
@@ -632,7 +702,6 @@
             }));
             
             const option = {
-                toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
                 tooltip: {
                     trigger: 'item',
                     confine: true
@@ -738,7 +807,6 @@
             const chart = echarts.init(container, null, { renderer: 'svg' });
 
             const option = {
-                toolbox: { feature: { saveAsImage: { type: 'svg', title: '导出 SVG' } }, right: 10, top: 0 },
                 tooltip: {
                     trigger: 'item',
                     confine: true,
@@ -796,6 +864,37 @@
             return chart;
         }
 
+        // 存储所有图表实例
+        const chartInstances = {};
+
+        // 单个图表导出函数
+        function exportChart(chartId, fileName, format = 'png') {
+            const chart = chartInstances[chartId];
+            if (!chart) {
+                console.warn(`图表 ${chartId} 不存在`);
+                return;
+            }
+            try {
+                const options = {
+                    type: format,
+                    backgroundColor: '#fff',
+                    excludeComponents: ['toolbox']
+                };
+                if (format === 'png') {
+                    options.pixelRatio = 2;
+                }
+                const url = chart.getConnectedDataURL(options);
+                const a = document.createElement('a');
+                const suffix = format === 'svg' ? 'svg' : 'png';
+                a.download = `${fileName}.${suffix}`;
+                a.href = url;
+                a.click();
+            } catch (error) {
+                console.error('导出失败:', error);
+                alert('导出失败，请重试');
+            }
+        }
+
         // 主函数
         async function init() {
             try {
@@ -808,32 +907,13 @@
                     document.getElementById('model-info').textContent = `对比 ${results.length} 个模型`;
                 }
 
-                const charts = [
-                    createOverallChart(results),
-                    createCategoryChart(results),
-                    createRadarChart(results),
-                    createDataHeatmap(results)
-                ];
-                
-                // 显示并配置导出按钮
-                const exportBtn = document.getElementById('export-svg-btn');
-                exportBtn.style.display = 'block';
-                exportBtn.onclick = () => {
-                    // 导出图表
-                    charts.forEach((chart, idx) => {
-                        if (!chart) return;
-                        const url = chart.getConnectedDataURL({
-                            type: 'svg',
-                            backgroundColor: '#fff',
-                            excludeComponents: ['toolbox']
-                        });
-                        const a = document.createElement('a');
-                        const chartNames = ['overall_accuracy', 'category_comparison', 'radar_distribution', 'detailed_heatmap'];
-                        a.download = `${chartNames[idx] || 'chart_' + idx}.svg`;
-                        a.href = url;
-                        a.click();
-                    });
-                };
+                // 创建图表并存储实例
+                chartInstances['overallChart'] = createOverallChart(results);
+                chartInstances['categoryChart'] = createCategoryChart(results);
+                chartInstances['radarChart'] = createRadarChart(results);
+                chartInstances['data-table'] = createDataHeatmap(results);
+
+                const charts = Object.values(chartInstances).filter(Boolean);
                 
                 window.addEventListener('resize', () => {
                     charts.forEach(chart => chart && chart.resize());

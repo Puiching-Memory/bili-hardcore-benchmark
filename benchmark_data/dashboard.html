@@ -492,6 +492,14 @@
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
+                
+                // 保存元数据
+                if (data.updated_at) {
+                    const headerTitle = document.querySelector('.header h1');
+                    const updateTime = new Date(data.updated_at).toLocaleString('zh-CN');
+                    headerTitle.innerHTML += ` <span style="font-size: 12px; font-weight: normal; opacity: 0.8;">(更新于: ${updateTime})</span>`;
+                }
+                
                 return data.questions || {};
             } catch (error) {
                 document.getElementById('loading').style.display = 'none';
@@ -503,7 +511,7 @@
 
         // 获取选项状态
         function getChoiceStatus(question, choiceIdx) {
-            if (question.correct_answer !== undefined) {
+            if (question.correct_answer != null) {
                 if (choiceIdx === question.correct_answer) {
                     return 'correct';
                 } else {
@@ -915,7 +923,7 @@
                 }
             }
             
-            const completeCount = Object.values(catQuestions).filter(q => q.correct_answer !== undefined).length;
+            const completeCount = Object.values(catQuestions).filter(q => q.correct_answer != null).length;
             const totalCount = Object.keys(catQuestions).length;
             const completePct = totalCount > 0 ? (completeCount / totalCount * 100).toFixed(1) : 0;
             
@@ -1199,7 +1207,7 @@
             });
             
             const catStats = sortedCategories.map(([cat, catQuestions]) => {
-                const complete = Object.values(catQuestions).filter(q => q.correct_answer !== undefined).length;
+                const complete = Object.values(catQuestions).filter(q => q.correct_answer != null).length;
                 const total = Object.keys(catQuestions).length;
                 return {
                     name: cat,
@@ -1210,9 +1218,9 @@
             });
             
             const totalQuestions = Object.keys(questions).length;
-            const completeQuestions = Object.values(questions).filter(q => q.correct_answer !== undefined).length;
+            const completeQuestions = Object.values(questions).filter(q => q.correct_answer != null).length;
             const partialQuestions = Object.values(questions).filter(q => 
-                q.correct_answer === undefined && q.wrong_answers && q.wrong_answers.length > 0
+                q.correct_answer == null && q.wrong_answers && q.wrong_answers.length > 0
             ).length;
             const unknownQuestions = totalQuestions - completeQuestions - partialQuestions;
             

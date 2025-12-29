@@ -36,10 +36,30 @@ class AIProviderBase(ABC):
         Returns:
             答案索引（0-based），如果解析失败返回 None
         """
-        # 尝试提取数字
+        import re
+
         response = response.strip()
 
-        # 尝试直接解析为整数
+        # 1. 尝试匹配常见的答案格式（优先级最高）
+        patterns = [
+            r"(?:回答|答案|选项|选择|index|result)[:：]\s*(\d+)",
+            r"正确答案是[:：]?\s*(\d+)",
+            r"应该选[:：]?\s*(\d+)",
+            r"(\d+)\s*是正确答案",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, response, re.IGNORECASE)
+            if match:
+                try:
+                    answer = int(match.group(1))
+                    if 1 <= answer <= num_choices:
+                        return answer - 1
+                    if 0 <= answer < num_choices:
+                        return answer
+                except ValueError:
+                    continue
+
+        # 2. 尝试直接解析为整数
         try:
             # 支持 1-based（1,2,3,4）和 0-based（0,1,2,3）
             answer = int(response)
@@ -54,18 +74,17 @@ class AIProviderBase(ABC):
         except ValueError:
             pass
 
-        # 尝试从文本中提取第一个数字
-        import re
-
+        # 3. 尝试从文本中提取数字，从后往前找（通常结论在最后）
         numbers = re.findall(r"\d+", response)
         if numbers:
-            try:
-                answer = int(numbers[0])
-                if 1 <= answer <= num_choices:
-                    return answer - 1
-                if 0 <= answer < num_choices:
-                    return answer
-            except ValueError:
-                pass
+            for num_str in reversed(numbers):
+                try:
+                    answer = int(num_str)
+                    if 1 <= answer <= num_choices:
+                        return answer - 1
+                    if 0 <= answer < num_choices:
+                        return answer
+                except ValueError:
+                    continue
 
         return None

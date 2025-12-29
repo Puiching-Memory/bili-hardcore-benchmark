@@ -8,7 +8,7 @@ import time
 from loguru import logger
 from openai import OpenAI
 
-from ...common.exceptions import QuizError
+from ...core.exceptions import QuizError
 from .provider import AIProviderBase
 
 

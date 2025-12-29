@@ -6,29 +6,27 @@
 
 ```
 bili-hardcore-benchmark/
-├── application/              # 应用层：业务逻辑
-│   ├── models/              # 数据模型（Question, Benchmark）
-│   └── services/            # 业务服务（答题、收集、导出）
-├── infrastructure/          # 基础设施层：技术实现
-│   ├── bilibili/           # B站 API 客户端（基于 httpx）
-│   ├── ai/                 # AI 服务（OpenAI 兼容）
-│   ├── persistence/        # 数据持久化和导出
-│   └── config/             # 配置管理（Pydantic Settings）
-├── common/                  # 公共组件
-│   ├── exceptions.py       # 异常体系
-│   ├── logging.py          # 日志配置
-│   └── types.py            # 类型定义
-├── container.py            # 依赖注入容器
+├── core/                    # 核心层：业务逻辑与领域模型
+│   ├── services/            # 业务服务（答题、收集、导出）
+│   ├── models.py            # Pydantic 数据模型
+│   ├── settings.py          # 配置管理
+│   ├── exceptions.py        # 异常体系
+│   └── logging.py           # 日志配置
+├── infrastructure/          # 基础设施层：技术实现适配器
+│   ├── bilibili/           # B站 API 客户端
+│   ├── ai/                 # AI 服务提供者
+│   └── persistence/        # 数据持久化与导出器
+├── container.py            # 依赖注入容器 (Lazy Singleton)
 ├── main.py                 # 答题模式入口
 └── export.py               # 导出模式入口
 ```
 
 ### 设计原则
 
-- **两层架构**：应用层（业务逻辑）+ 基础设施层（技术实现）
-- **依赖注入**：通过容器管理所有依赖关系
-- **类型安全**：全项目类型注解，支持 mypy strict 模式
-- **渐进式重构**：新架构与旧代码并存，平滑迁移
+- **扁平化架构**：核心逻辑集中在 `core/`，外部依赖隔离在 `infrastructure/`。
+- **强类型驱动**：全面使用 Pydantic v2 进行数据校验和模型定义。
+- **依赖注入**：通过 `Container` 管理组件生命周期，支持延迟加载。
+- **代码规范**：严格遵守 Ruff、Black 和 Mypy 检查。
 
 详细的架构说明请参考 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
@@ -37,17 +35,13 @@ bili-hardcore-benchmark/
 ### 安装开发依赖
 
 ```bash
-# 安装开发依赖（包含 CPU 版本的 PyTorch）
+# 使用 uv 安装所有依赖（包含开发工具）
 uv sync --extra dev --extra cpu
-
-# 或安装开发依赖（包含 CUDA 版本的 PyTorch，需要先安装 PyTorch）
-uv pip install --index-url https://download.pytorch.org/whl/cu126 torch torchvision torchaudio
-uv sync --extra dev --extra cuda
 ```
 
 ### 初始化子模块
 
-项目使用 `lm-evaluation-harness` 作为 Git 子模块，需要先初始化：
+项目使用 `lm-evaluation-harness` 作为 Git 子模块，用于 LLM 评估：
 
 ```bash
 git submodule update --init --recursive
@@ -55,46 +49,27 @@ git submodule update --init --recursive
 
 ## 🔍 代码质量检查
 
-### 类型检查
+在提交代码前，请确保通过以下检查：
+
+### 类型检查 (Mypy)
 
 ```bash
 # 运行 mypy 类型检查
-uv run mypy bili-hardcore-benchmark
+uv run mypy bili_hardcore_benchmark
 ```
 
-项目使用 mypy strict 模式，所有代码必须通过类型检查。
-
-### 代码格式化
+### 代码格式化 (Black)
 
 ```bash
 # 使用 black 格式化代码
-uv run black bili-hardcore-benchmark
-
-# 检查代码格式（不修改）
-uv run black --check bili-hardcore-benchmark
+uv run black bili_hardcore_benchmark
 ```
 
-### Linting
+### Linting (Ruff)
 
 ```bash
-# 运行 ruff 检查
-uv run ruff check bili-hardcore-benchmark
-
-# 自动修复可修复的问题
-uv run ruff check --fix bili-hardcore-benchmark
-```
-
-### 运行所有检查
-
-```bash
-# 类型检查
-uv run mypy bili-hardcore-benchmark
-
-# 代码格式化检查
-uv run black --check bili-hardcore-benchmark
-
-# Linting
-uv run ruff check bili-hardcore-benchmark
+# 运行 ruff 检查并自动修复
+uv run ruff check --fix bili_hardcore_benchmark
 ```
 
 ## 📦 项目依赖管理

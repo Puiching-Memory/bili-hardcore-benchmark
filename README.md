@@ -29,8 +29,7 @@
 **环境要求**：Python 3.10+, [uv](https://github.com/astral-sh/uv)
 
 ```bash
-# 初始化
-git submodule update --init --recursive
+# 安装依赖
 uv sync --extra cpu  # 或 --extra cuda
 ```
 

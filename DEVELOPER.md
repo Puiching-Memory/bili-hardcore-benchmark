@@ -39,14 +39,6 @@ bili-hardcore-benchmark/
 uv sync --extra dev --extra cpu
 ```
 
-### 初始化子模块
-
-项目使用 `lm-evaluation-harness` 作为 Git 子模块，用于 LLM 评估：
-
-```bash
-git submodule update --init --recursive
-```
-
 ## 🔍 代码质量检查
 
 在提交代码前，请确保通过以下检查：
@@ -84,19 +76,9 @@ uv run ruff check --fix bili_hardcore_benchmark
   - `cuda`: CUDA 版本的 PyTorch（>= 2.9, < 3.0）
   - `cpu`: CPU 版本的 PyTorch（>= 2.9, < 3.0）
 
-### 本地依赖
+### 第三方评估依赖
 
-项目使用 `lm-evaluation-harness` 作为 Git 子模块（位于 `3rd/lm-evaluation-harness`），通过 `[tool.uv.sources]` 配置为本地路径依赖：
-
-```toml
-[tool.uv.sources]
-lm_eval = { path = "3rd/lm-evaluation-harness" }
-```
-
-这意味着：
-- `lm_eval` 包从本地路径安装，而不是从 PyPI
-- 修改 `3rd/lm-evaluation-harness` 中的代码会直接影响项目
-- 更新子模块后需要重新运行 `uv sync`
+项目通过 PyPI 安装 `lm_eval[api,hf]`，无需初始化 Git 子模块。
 
 ### 更新依赖
 
@@ -156,19 +138,14 @@ uv sync --upgrade-package <package-name>
 
 ### 常见问题
 
-1. **子模块未初始化**
-   ```bash
-   git submodule update --init --recursive
-   ```
-
-2. **依赖安装失败**
+1. **依赖安装失败**
    ```bash
    # 清理并重新安装
    rm -rf .venv uv.lock
    uv sync
    ```
 
-3. **类型检查失败**
+2. **类型检查失败**
    - 确保所有函数都有类型注解
    - 检查是否有未导入的类型
 

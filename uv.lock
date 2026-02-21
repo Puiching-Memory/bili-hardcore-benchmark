@@ -261,7 +261,7 @@ requires-dist = [
     { name = "datasets", specifier = ">=2.0.0" },
     { name = "httpx", specifier = ">=0.25.0" },
     { name = "idna", specifier = ">=3.4" },
-    { name = "lm-eval", extras = ["api", "hf"], directory = "3rd/lm-evaluation-harness" },
+    { name = "lm-eval", extras = ["api", "hf"] },
     { name = "loguru", specifier = ">=0.6.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "openai", specifier = ">=1.0.0" },
@@ -985,8 +985,8 @@ wheels = [
 
 [[package]]
 name = "lm-eval"
-version = "0.4.12.dev0"
-source = { directory = "3rd/lm-evaluation-harness" }
+version = "0.4.11"
+source = { registry = "https://mirrors.cloud.tencent.com/pypi/simple" }
 dependencies = [
     { name = "datasets" },
     { name = "dill" },
@@ -1006,6 +1006,10 @@ dependencies = [
     { name = "word2number" },
     { name = "zstandard" },
 ]
+sdist = { url = "https://mirrors.cloud.tencent.com/pypi/packages/18/40/ad60ae17f97902ba4ee67914a94c159552f8643fb4598d1d2430a571f0a2/lm_eval-0.4.11.tar.gz", hash = "sha256:a3891d6d0b4ad17892f2ca1046094554ce3ab6cb522759e4a453858e45649916" }
+wheels = [
+    { url = "https://mirrors.cloud.tencent.com/pypi/packages/df/b3/8c2923ad4c4d911307e20ab9c7d7869d3811b5a76fe6dbe53678aafbeb04/lm_eval-0.4.11-py3-none-any.whl", hash = "sha256:9c9945475a715558649a38ffcb90f46e7bd23a849524a5e838f249161b030517" },
+]
 
 [package.optional-dependencies]
 api = [
@@ -1020,104 +1024,6 @@ hf = [
     { name = "peft" },
     { name = "torch" },
     { name = "transformers" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "accelerate", marker = "extra == 'hf'", specifier = ">=0.26.0" },
-    { name = "aiohttp", marker = "extra == 'api'" },
-    { name = "aiohttp", marker = "extra == 'dev'" },
-    { name = "antlr4-python3-runtime", marker = "extra == 'math'", specifier = "==4.11" },
-    { name = "auto-gptq", extras = ["triton"], marker = "extra == 'gptq'", specifier = ">=0.6.0" },
-    { name = "datasets", specifier = ">=2.16.0" },
-    { name = "dill" },
-    { name = "emoji", marker = "extra == 'japanese-leaderboard'", specifier = "==2.14.0" },
-    { name = "evaluate", specifier = ">=0.4.0" },
-    { name = "fugashi", extras = ["unidic-lite"], marker = "extra == 'japanese-leaderboard'" },
-    { name = "fuzzywuzzy", marker = "extra == 'longbench'" },
-    { name = "gptqmodel", marker = "extra == 'gptqmodel'", specifier = ">=1.0.9" },
-    { name = "ibm-watsonx-ai", marker = "extra == 'ibm-watsonx-ai'", specifier = ">=1.1.22" },
-    { name = "immutabledict", marker = "extra == 'ifeval'" },
-    { name = "jieba", marker = "extra == 'longbench'" },
-    { name = "jieba", marker = "extra == 'multilingual'", specifier = ">=0.42.1" },
-    { name = "jinja2" },
-    { name = "jsonlines" },
-    { name = "kstar-planner", marker = "extra == 'acpbench'", specifier = "==1.4.2" },
-    { name = "langdetect", marker = "extra == 'ifeval'" },
-    { name = "lark", marker = "extra == 'acpbench'", specifier = ">=1.1.9" },
-    { name = "librosa", marker = "extra == 'audiolm-qwen'" },
-    { name = "lm-eval", extras = ["discrim-eval"], marker = "extra == 'tasks'" },
-    { name = "lm-eval", extras = ["ifeval"], marker = "extra == 'tasks'" },
-    { name = "lm-eval", extras = ["japanese-leaderboard"], marker = "extra == 'tasks'" },
-    { name = "lm-eval", extras = ["libra"], marker = "extra == 'tasks'" },
-    { name = "lm-eval", extras = ["longbench"], marker = "extra == 'tasks'" },
-    { name = "lm-eval", extras = ["math"], marker = "extra == 'tasks'" },
-    { name = "lm-eval", extras = ["multilingual"], marker = "extra == 'tasks'" },
-    { name = "lm-eval", extras = ["ruler"], marker = "extra == 'tasks'" },
-    { name = "math-verify", extras = ["antlr4-11-0"], marker = "extra == 'math'" },
-    { name = "more-itertools" },
-    { name = "nagisa", marker = "extra == 'multilingual'", specifier = ">=0.2.7" },
-    { name = "neologdn", marker = "extra == 'japanese-leaderboard'", specifier = "==0.5.3" },
-    { name = "nltk", marker = "extra == 'ifeval'", specifier = ">=3.9.1" },
-    { name = "nltk", marker = "extra == 'ruler'" },
-    { name = "numpy" },
-    { name = "numpy", marker = "extra == 'wandb'" },
-    { name = "optimum", extras = ["openvino"], marker = "extra == 'optimum'" },
-    { name = "optimum-intel", marker = "extra == 'ipex'" },
-    { name = "pandas", marker = "extra == 'wandb'" },
-    { name = "pandas", marker = "extra == 'zeno'" },
-    { name = "pddl", marker = "extra == 'acpbench'", specifier = "==0.4.2" },
-    { name = "peft", marker = "extra == 'hf'", specifier = ">=0.2.0" },
-    { name = "pre-commit", marker = "extra == 'dev'" },
-    { name = "pycountry", marker = "extra == 'multilingual'" },
-    { name = "pymorphy2", marker = "extra == 'libra'" },
-    { name = "pytablewriter" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-cov", marker = "extra == 'dev'" },
-    { name = "pytest-xdist", marker = "extra == 'dev'" },
-    { name = "python-dotenv", marker = "extra == 'ibm-watsonx-ai'" },
-    { name = "requests", marker = "extra == 'api'" },
-    { name = "requests", marker = "extra == 'dev'" },
-    { name = "rouge", marker = "extra == 'longbench'" },
-    { name = "rouge-score", specifier = ">=0.0.4" },
-    { name = "rouge-score", marker = "extra == 'japanese-leaderboard'", specifier = ">=0.1.2" },
-    { name = "ruff", marker = "extra == 'dev'" },
-    { name = "sacrebleu", specifier = ">=1.5.0" },
-    { name = "scikit-learn", specifier = ">=0.24.1" },
-    { name = "scipy", marker = "extra == 'ruler'" },
-    { name = "sentencepiece", marker = "extra == 'dev'" },
-    { name = "sentencepiece", marker = "extra == 'sentencepiece'", specifier = ">=0.1.98" },
-    { name = "soundfile", marker = "extra == 'audiolm-qwen'" },
-    { name = "sparsify", marker = "extra == 'sparsify'" },
-    { name = "sqlitedict" },
-    { name = "statsmodels", marker = "extra == 'discrim-eval'", specifier = "==0.14.4" },
-    { name = "sympy", marker = "extra == 'math'", specifier = ">=1.12" },
-    { name = "tarski", extras = ["clingo"], marker = "extra == 'acpbench'", specifier = "==0.8.2" },
-    { name = "tenacity", marker = "extra == 'api'" },
-    { name = "tenacity", marker = "extra == 'dev'" },
-    { name = "tiktoken", marker = "extra == 'api'" },
-    { name = "tiktoken", marker = "extra == 'dev'" },
-    { name = "torch", marker = "extra == 'hf'", specifier = ">=1.8" },
-    { name = "tqdm", marker = "extra == 'api'" },
-    { name = "tqdm", marker = "extra == 'dev'" },
-    { name = "transformers", marker = "extra == 'hf'", specifier = ">=4.1" },
-    { name = "typing-extensions" },
-    { name = "unitxt", marker = "extra == 'unitxt'", specifier = "==1.22.0" },
-    { name = "vllm", marker = "extra == 'vllm'", specifier = ">=0.4.2" },
-    { name = "wandb", marker = "extra == 'wandb'", specifier = ">=0.16.3" },
-    { name = "wonderwords", marker = "extra == 'ruler'" },
-    { name = "word2number" },
-    { name = "zeno-client", marker = "extra == 'zeno'" },
-    { name = "zstandard" },
-]
-provides-extras = ["api", "hf", "vllm", "gptq", "gptqmodel", "ipex", "ibm-watsonx-ai", "optimum", "sparsify", "acpbench", "audiolm-qwen", "dev", "ifeval", "japanese-leaderboard", "longbench", "libra", "math", "multilingual", "ruler", "sentencepiece", "discrim-eval", "unitxt", "wandb", "zeno", "tasks"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "lm-eval", extras = ["api"] },
-    { name = "lm-eval", extras = ["dev"] },
-    { name = "lm-eval", extras = ["hf"] },
-    { name = "sentencepiece" },
 ]
 
 [[package]]

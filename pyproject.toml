@@ -97,6 +97,3 @@ module = [
     "datasets.*",
 ]
 ignore_missing_imports = true
-
-[tool.uv.sources]
-lm_eval = { path = "3rd/lm-evaluation-harness" }

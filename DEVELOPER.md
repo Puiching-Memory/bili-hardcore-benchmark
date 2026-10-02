@@ -92,7 +92,14 @@ uv sync --upgrade-package <package-name>
 
 ## 🧪 测试
 
-（如果项目有测试，在这里添加测试说明）
+离线回归测试使用标准库 `unittest`，运行实际答题循环和题库持久化逻辑，
+以固定题目的模拟接口替代 B 站和 AI 请求，不消耗真实答题机会。
+
+```bash
+uv run python -m unittest discover -s tests -v
+```
+
+这些测试验证代码在指定输入下的行为；B 站真实会话验证仍需单独进行。
 
 ## 📝 代码规范
 

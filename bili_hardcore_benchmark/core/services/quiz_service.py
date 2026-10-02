@@ -15,7 +15,7 @@ class QuizService:
     def select_answer(self, q: Question) -> tuple[int, str]:
         if q.correct_answer is not None:
             wrong = [i for i in range(len(q.choices)) if i != q.correct_answer]
-            return random.choice(wrong or [0]), "故意选错"
+            return random.choice(wrong), "故意选错"
 
         untried = q.get_untried_indices()
         if len(untried) == 1:
